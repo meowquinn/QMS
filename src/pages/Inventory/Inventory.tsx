@@ -378,7 +378,7 @@ const InventoryStock: React.FC = () => {
     {
       title: 'Tồn kho hiện tại',
       key: 'stock',
-      render: (text: string, record: Chemical) => (
+      render: (_: string, record: Chemical) => (
         <div>
           <div className="text-lg font-medium">
             {record.currentStock} {record.unit}
@@ -392,13 +392,13 @@ const InventoryStock: React.FC = () => {
     {
       title: 'Trạng thái',
       key: 'status',
-      render: (text: string, record: Chemical) => 
+      render: (_: string, record: Chemical) => 
         renderStockStatus(record.currentStock, record.minThreshold, record.reorderLevel),
     },
     {
       title: 'Ngưỡng tối thiểu',
       key: 'threshold',
-      render: (text: string, record: Chemical) => (
+      render: (_: string, record: Chemical) => (
         <div>
           <div className="text-sm">Tối thiểu: {record.minThreshold} {record.unit}</div>
           <div className="text-sm">Đặt lại: {record.reorderLevel} {record.unit}</div>
@@ -491,7 +491,7 @@ const InventoryStock: React.FC = () => {
     {
       title: 'Số lượng',
       key: 'amount',
-      render: (text: string, record: AdjustmentRecord) => (
+      render: (_: string, record: AdjustmentRecord) => (
         <div>{record.amount} {record.unit}</div>
       ),
     },
