@@ -1,2 +1,2 @@
-import StaffList from './StaffList';
+import StaffList from './Staff';
 export default StaffList;

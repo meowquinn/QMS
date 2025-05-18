@@ -1,2 +1,2 @@
-import InventoryIn from './InventoryIn';
-export default InventoryIn;
+import Inventory from './Inventory';
+export default Inventory;
