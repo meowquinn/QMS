@@ -483,20 +483,23 @@ const QualityMeasurements: React.FC = () => {
         </div>
       </Card>
       
-      <Card>
-        <Table 
-          columns={columns}
-          dataSource={filteredRecords}
-          rowKey="id"
-          loading={loading}
-          rowClassName={(record) => record.needsAction && !record.resolved ? 'bg-red-50' : ''}
-          pagination={{ 
-            pageSize: 10, 
-            showSizeChanger: true, 
-            pageSizeOptions: ['10', '20', '50'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} kết quả đo` 
-          }}
-        />
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <Table 
+            columns={columns}
+            dataSource={filteredRecords}
+            rowKey="id"
+            loading={loading}
+            rowClassName={(record) => record.needsAction && !record.resolved ? 'bg-red-50' : ''}
+            pagination={{ 
+              pageSize: 10, 
+              showSizeChanger: true, 
+              pageSizeOptions: ['10', '20', '50'],
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} kết quả đo` 
+            }}
+            scroll={{ x: 'max-content' }}
+          />
+        </div>
       </Card>
     </div>
   );
