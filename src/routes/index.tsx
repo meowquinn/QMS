@@ -1,46 +1,75 @@
-import React from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from '../components/layouts/MainLayout';
+import { useAuth } from '../contexts/AuthContext';
+import MainLayout from '../components/layouts/MainLayout/MainLayout';
 
-// Lazy loaded pages
+// Loading component
+const LoadingFallback = () => (
+  <div className="h-screen w-screen flex items-center justify-center">
+    <div className="text-xl font-bold">Đang tải...</div>
+  </div>
+);
+
+// Import các trang
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const WaterParameters = React.lazy(() => import('../pages/QualityTracking/WaterParameters'));
-const QualityAlerts = React.lazy(() => import('../pages/QualityTracking/QualityAlerts'));
+const WaterQualityRecords = React.lazy(() => import('../pages/QualityTracking/WaterQualityRecords'));
 const PoolList = React.lazy(() => import('../pages/Pools/Pools'));
 const Staff = React.lazy(() => import('../pages/Staff/Staff'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const Login = React.lazy(() => import('../pages/Login/Login'));
 
+// Trang bảo vệ cho Admin
 
 const AppRoutes: React.FC = () => {
+  const { user, login } = useAuth();
+  
+  // Thêm logging để debug
+  useEffect(() => {
+    console.log('AppRoutes mounted');
+    console.log('Current user:', user);
+  }, [user]);
+
   return (
     <Router>
-      <React.Suspense fallback={<div className="flex items-center justify-center h-screen">Đang tải...</div>}>
+      <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          {/* Login route */}
-          <Route path="/login" element={<Login />} />
+          {/* Public Routes */}
+          <Route path="/login" element={
+            user ? <Navigate to="/dashboard" /> : <Login onLogin={login} />
+          } />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           
-          {/* Main routes with layout */}
-          <Route path="/" element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+          {/* Protected Routes với Layout chung */}
+          <Route element={<MainLayout />}>
+            <Route path="/dashboard" element={
+              user ? <Dashboard /> : <Navigate to="/login" />
+            } />
             
-            {/* Quality Tracking */}
-            <Route path="/quality-tracking/parameters" element={<WaterParameters />} />
-            <Route path="/quality-tracking/alerts" element={<QualityAlerts />} />
+            {/* Admin Routes */}
+            <Route path="/staff" element={
+              user ? <Staff /> : <Navigate to="/login" />
+            } />
             
-            {/* Pools */}
-            <Route path="/pools" element={<PoolList />} />
-            
-            {/* Staff */}
-            <Route path="/staff" element={<Staff />} />
-            
-            {/* Inventory */}
-            <Route path="/inventory" element={<Inventory />} />
-            
+            {/* Regular Protected Routes */}
+            <Route path="/pools" element={
+              user ? <PoolList /> : <Navigate to="/login" />
+            } />
+            <Route path="/inventory" element={
+              user ? <Inventory /> : <Navigate to="/login" />
+            } />
+            <Route path="/quality/records" element={
+              user ? <WaterQualityRecords /> : <Navigate to="/login" />
+            } />
+            <Route path="/quality/parameters" element={
+              user ? <WaterParameters /> : <Navigate to="/login" />
+            } />
           </Route>
+          
+          {/* Catch All Route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </React.Suspense>
+      </Suspense>
     </Router>
   );
 };

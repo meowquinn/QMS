@@ -1,51 +1,59 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
+
+
+interface LoginProps {
+  onLogin: (userData: unknown) => void;
+}
 
 interface LoginFormValues {
   username: string;
   password: string;
 }
 
-const Login: React.FC = () => {
-  const navigate = useNavigate();
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Danh sách người dùng mẫu cho trang login (sau này sẽ sử dụng API)
-  const mockUsers = [
-    { username: 'admin', password: 'admin123', role: 'admin', name: 'Admin' },
-    { username: 'staff', password: 'staff123', role: 'user', name: 'Nhân viên' },
-  ];
-
   const onFinish = (values: LoginFormValues) => {
     setLoading(true);
-
-    // Giả lập API call để đăng nhập
+    
+    // Giả lập API call
     setTimeout(() => {
-      const user = mockUsers.find(
-        (u) => u.username === values.username && u.password === values.password
+      // Thông tin đăng nhập mẫu
+      const users = [
+        {
+          username: 'admin',
+          password: 'admin123',
+          name: 'Quản trị viên',
+          role: 'Quản lý hệ thống',
+          access: 'admin'
+        },
+        {
+          username: 'staff',
+          password: 'staff123',
+          name: 'Nhân viên',
+          role: 'Nhân viên đo đạc',
+          access: 'user'
+        }
+      ];
+      
+      const user = users.find(
+        u => u.username === values.username && u.password === values.password
       );
-
+      
       if (user) {
-        // Lưu thông tin người dùng vào sessionStorage
-        const userData = {
-          username: user.username,
-          role: user.role,
-          name: user.name,
-        };
-
-        sessionStorage.setItem('user', JSON.stringify(userData));
-
-        // Thông báo thành công
         message.success('Đăng nhập thành công!');
-        
-        // Chuyển hướng đến trang dashboard
-        navigate('/dashboard');
+        // Truyền thông tin người dùng lên component cha
+        onLogin({
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          access: user.access
+        });
       } else {
-        // Hiển thị lỗi
         message.error('Tên đăng nhập hoặc mật khẩu không đúng!');
       }
       
@@ -121,9 +129,7 @@ const Login: React.FC = () => {
             </div>
           </Form>
           
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>© 2025 PoolQMS. Bản quyền thuộc về công ty ABC</p>
-          </div>
+          {/* Footer */}
         </div>
       </motion.div>
     </div>

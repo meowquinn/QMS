@@ -1,64 +1,83 @@
-import { type JSX } from 'react';
-import { VscDashboard, VscBeaker } from "react-icons/vsc";
-import { PiUsersThree } from "react-icons/pi";
+import React, { type JSX } from 'react';
+import { 
+  FiHome, 
+  FiUsers, 
+  FiDatabase, 
+  FiBox, 
+  FiActivity, 
+  FiClipboard,
+  FiFileText, 
+} from 'react-icons/fi';
 
-import {  
-  FaSwimmingPool, FaWarehouse,
-} from 'react-icons/fa';
-
-export interface MenuItem {
+// Định nghĩa kiểu dữ liệu cho menu item
+interface SubMenuItem {
   id: string;
   title: string;
   path: string;
   icon: JSX.Element;
-  subItems?: MenuItem[];
+}
+
+interface MenuItem {
+  id: string;
+  title: string;
+  path: string;
+  icon: JSX.Element;
+  subItems?: SubMenuItem[];
+  adminOnly?: boolean;
 }
 
 const sidebarMenu: MenuItem[] = [
   {
     id: 'dashboard',
-    title: 'TỔNG QUAN',
+    title: 'Tổng quan',
     path: '/dashboard',
-    icon: <VscDashboard className="mr-4 h-5 w-5" />,
+    icon: <FiHome className="w-4 h-4" />,
+    adminOnly: false
   },
   {
     id: 'quality-tracking',
-    title: 'THEO DÕI CHẤT LƯỢNG',
-    path: '/quality-tracking',
-    icon: <VscBeaker className="mr-4 h-5 w-5" />,
+    title: 'Chất Lượng Nước',
+    path: '/quality',
+    icon: <FiActivity className="w-4 h-4" />,
+    adminOnly: false,
     subItems: [
       {
-        id: 'water-parameters',
-        title: 'Đo chỉ số nước',
-        path: '/quality-tracking/parameters',
-        icon: <></>,
+        id: 'quality-parameters',
+        title: 'Nhập chỉ số',
+        path: '/quality/parameters',
+        icon: <FiFileText className="w-4 h-4" />
       },
       {
-        id: 'quality-alerts',
-        title: 'Cảnh báo',
-        path: '/quality-tracking/alerts',
-        icon: <></>,
+        id: 'quality-records',
+        title: 'Lịch sử đo',
+        path: '/quality/records',
+        icon: <FiClipboard className="w-4 h-4" />
       },
-    ],
+      
+    ]
   },
   {
     id: 'pools',
-    title: 'THÔNG TIN HỒ BƠI',
+    title: 'Hồ bơi',
     path: '/pools',
-    icon: <FaSwimmingPool className="mr-4 h-5 w-5" />,
+    icon: <FiBox className="w-4 h-4" />,
+    adminOnly: false
   },
   {
     id: 'staff',
-    title: 'NHÂN VIÊN',
+    title: 'Nhân viên',
     path: '/staff',
-    icon: <PiUsersThree className="mr-4 h-5 w-5" />,
+    icon: <FiUsers className="w-4 h-4" />,
+    adminOnly: true // Chỉ admin mới thấy quản lý nhân viên
   },
   {
     id: 'inventory',
-    title: 'QUẢN LÝ KHO',
+    title: 'Kho',
     path: '/inventory',
-    icon: <FaWarehouse className="mr-4 h-5 w-5" />,
+    icon: <FiDatabase className="w-4 h-4" />,
+    adminOnly: false
   },
+  
 ];
 
 export default sidebarMenu;

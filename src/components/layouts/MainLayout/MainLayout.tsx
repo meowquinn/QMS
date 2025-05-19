@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar/Sidebar';
 import { VscMenu } from "react-icons/vsc";
+import { useAuth } from '../../../contexts/AuthContext';
 
 const MainLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   
   // Kiểm tra kích thước màn hình
   useEffect(() => {
@@ -34,6 +37,11 @@ const MainLayout: React.FC = () => {
     setMobileSidebarOpen(!mobileSidebarOpen);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="flex h-screen w-full bg-gray-100 overflow-hidden">
       {/* Mobile Sidebar */}
@@ -42,12 +50,18 @@ const MainLayout: React.FC = () => {
           isMobile={true}
           isOpen={mobileSidebarOpen}
           onClose={() => setMobileSidebarOpen(false)}
+          user={user ?? undefined}
+          onLogout={handleLogout}
         />
       )}
       
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <Sidebar onToggle={handleSidebarToggle} />
+        <Sidebar 
+          onToggle={handleSidebarToggle}
+          user={user ?? undefined}
+          onLogout={handleLogout}
+        />
       )}
       
       <div 

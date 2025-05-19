@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Button, Modal, Form, Input, Select, 
-  Popconfirm,  message, Space, Tag, Spin
+  Popconfirm, message, Space, Tag, Spin
 } from 'antd';
 import { 
   PlusOutlined, EditOutlined, DeleteOutlined, 
   SearchOutlined 
 } from '@ant-design/icons';
 import { FaSwimmingPool } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Mô hình dữ liệu cho hồ bơi
 interface Pool {
@@ -32,6 +33,9 @@ const PoolList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   // State quản lý tìm kiếm
   const [searchText, setSearchText] = useState('');
+
+  // Lấy thông tin người dùng và quyền từ context
+  const { isAdmin } = useAuth();
 
   // Giả lập dữ liệu
   useEffect(() => {
@@ -74,7 +78,7 @@ const PoolList: React.FC = () => {
       setLoading(false);
     }, 800);
   }, []);
-
+  
   // Lọc dữ liệu theo từ khóa tìm kiếm
   const filteredPools = pools.filter(
     pool => 
@@ -84,6 +88,10 @@ const PoolList: React.FC = () => {
 
   // Mở modal thêm mới
   const showAddModal = () => {
+    if (!isAdmin) {
+      message.warning('Bạn không có quyền thêm hồ bơi mới');
+      return;
+    }
     setEditingPool(null);
     form.resetFields();
     setIsModalVisible(true);
@@ -91,6 +99,10 @@ const PoolList: React.FC = () => {
 
   // Mở modal sửa
   const showEditModal = (pool: Pool) => {
+    if (!isAdmin) {
+      message.warning('Bạn không có quyền chỉnh sửa hồ bơi');
+      return;
+    }
     setEditingPool(pool);
     form.setFieldsValue(pool);
     setIsModalVisible(true);
@@ -128,6 +140,10 @@ const PoolList: React.FC = () => {
 
   // Xử lý xóa
   const handleDelete = (id: string) => {
+    if (!isAdmin) {
+      message.warning('Bạn không có quyền xóa hồ bơi');
+      return;
+    }
     setPools(pools.filter(pool => pool.id !== id));
     message.success('Đã xóa hồ bơi thành công!');
   };
@@ -167,22 +183,22 @@ const PoolList: React.FC = () => {
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={showAddModal}
-          >
-            Thêm hồ bơi
-          </Button>
+          {isAdmin && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={showAddModal}
+            >
+              Thêm hồ bơi
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Bảng HTML giống Dashboard */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-800">Danh sách hồ bơi</h2>
-        </div>
-        <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <Spin tip="Đang tải..." />
@@ -206,9 +222,11 @@ const PoolList: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
+                  {isAdmin && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -232,37 +250,43 @@ const PoolList: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {renderStatus(pool.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Space size="small">
-                        <Button
-                          icon={<EditOutlined />}
-                          type="primary"
-                          size="small"
-                          onClick={() => showEditModal(pool)}
-                          ghost
-                        />
-                        <Popconfirm
-                          title="Bạn có chắc chắn muốn xóa hồ bơi này?"
-                          onConfirm={() => handleDelete(pool.id)}
-                          okText="Xóa"
-                          cancelText="Hủy"
-                        >
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <Space size="small">
                           <Button
-                            icon={<DeleteOutlined />}
+                            icon={<EditOutlined />}
                             type="primary"
                             size="small"
-                            danger
+                            onClick={() => showEditModal(pool)}
                             ghost
-                          />
-                        </Popconfirm>
-                      </Space>
-                    </td>
+                          >
+                            Sửa
+                          </Button>
+                          <Popconfirm
+                            title="Bạn có chắc chắn muốn xóa hồ bơi này?"
+                            onConfirm={() => handleDelete(pool.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                          >
+                            <Button
+                              icon={<DeleteOutlined />}
+                              type="primary"
+                              size="small"
+                              danger
+                              ghost
+                            >
+                              Xóa
+                            </Button>
+                          </Popconfirm>
+                        </Space>
+                      </td>
+                    )}
                   </tr>
                 ))}
 
                 {filteredPools.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-sm text-gray-500">
                       Không tìm thấy hồ bơi nào
                     </td>
                   </tr>
@@ -270,6 +294,7 @@ const PoolList: React.FC = () => {
               </tbody>
             </table>
           )}
+          </div>
         </div>
       </div>
 

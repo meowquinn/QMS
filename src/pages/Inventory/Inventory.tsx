@@ -410,24 +410,27 @@ const InventoryStock: React.FC = () => {
       key: 'action',
       render: (_: string, record: Chemical) => (
         <Space size="middle">
-          <Button 
-            onClick={() => showAdjustModal(record)} 
-            icon={<EditOutlined />} 
-            type="primary" 
-            size="small"
-            className="bg-blue-500"
-          >
-            Điều chỉnh
-          </Button>
-          <Button 
-            onClick={() => showRestockModal(record)} 
-            icon={<PlusCircleOutlined />} 
-            type="primary" 
-            size="small"
-            className="bg-green-600"
-          >
-            Nạp thêm
-          </Button>
+          <Tooltip title="Sửa">
+            <Button
+              icon={<EditOutlined />}
+              type="primary"
+              size="small"
+              onClick={() => showAdjustModal(record)}
+              className="bg-blue-500"
+              ghost
+          />
+          </Tooltip>
+          
+          <Tooltip title="Nạp hóa chất">
+            <Button 
+              onClick={() => showRestockModal(record)} 
+              icon={<PlusCircleOutlined />} 
+              type="primary" 
+              size="small"
+              className="bg-green-600"
+          />
+          </Tooltip>
+          
           <Tooltip title="Xem lịch sử">
             <Button 
               icon={<HistoryOutlined />} 
@@ -538,14 +541,17 @@ const InventoryStock: React.FC = () => {
             </Button>
           </div>
           
-          <Card className="mt-4 shadow-md">
-            <Table 
-              columns={chemicalColumns} 
-              dataSource={filteredChemicals}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 6 }}
-            />
+          <Card className="mt-4 shadow-md overflow-hidden">
+            <div className="overflow-x-auto w-full">
+              <Table 
+                columns={chemicalColumns} 
+                dataSource={filteredChemicals}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 6 }}
+                scroll={{ x: 'max-content' }}
+              />
+            </div>
           </Card>
         </div>
       ),
