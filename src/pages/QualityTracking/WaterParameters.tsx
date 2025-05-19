@@ -7,7 +7,8 @@ const { Option } = Select;
 // Define threshold constants
 const PH_MIN = 7.0;
 const PH_MAX = 7.6;
-const CHLORINE_MAX = 5.0; // mg/L
+const CHLORINE_MIN = 0.5; // mg/L 
+const CHLORINE_MAX = 3.0; // mg/L 
 
 interface WaterParameterFormData {
   poolId: string;
@@ -53,8 +54,12 @@ const WaterParameters: React.FC = () => {
       }
     }
     
-    if (formData.chlorine !== null && formData.chlorine > CHLORINE_MAX) {
-      newWarnings.push(`Cảnh báo: Nồng độ Clo (${formData.chlorine} mg/L) cao hơn ngưỡng tối đa (${CHLORINE_MAX} mg/L)`);
+    if (formData.chlorine !== null) {
+      if (formData.chlorine < CHLORINE_MIN) {
+        newWarnings.push(`Cảnh báo: Nồng độ Clo (${formData.chlorine} mg/L) thấp hơn ngưỡng tối thiểu (${CHLORINE_MIN} mg/L)`);
+      } else if (formData.chlorine > CHLORINE_MAX) {
+        newWarnings.push(`Cảnh báo: Nồng độ Clo (${formData.chlorine} mg/L) cao hơn ngưỡng tối đa (${CHLORINE_MAX} mg/L)`);
+      }
     }
     
     setWarnings(newWarnings);
@@ -220,9 +225,10 @@ const WaterParameters: React.FC = () => {
             <Form.Item 
               label="Nồng độ Clo (mg/L)" 
               required
-              help={`Giá trị tối đa: ${CHLORINE_MAX} mg/L`}
+              help={`Giá trị tiêu chuẩn: ${CHLORINE_MIN} - ${CHLORINE_MAX} mg/L`}
               validateStatus={
-                formData.chlorine !== null && formData.chlorine > CHLORINE_MAX 
+                formData.chlorine !== null && 
+                (formData.chlorine < CHLORINE_MIN || formData.chlorine > CHLORINE_MAX)
                   ? 'warning' 
                   : undefined
               }
@@ -231,7 +237,7 @@ const WaterParameters: React.FC = () => {
                 type="number"
                 step="0.1"
                 min="0"
-                placeholder="Ví dụ: 3.0"
+                placeholder="Ví dụ: 1.5"
                 value={formData.chlorine === null ? '' : formData.chlorine}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNumberChange('chlorine', e.target.value)}
               />
@@ -264,7 +270,7 @@ const WaterParameters: React.FC = () => {
         <h3 className="text-lg font-semibold text-blue-800 mb-2">Hướng dẫn</h3>
         <ul className="list-disc pl-5 text-blue-700">
           <li>Độ pH tiêu chuẩn nên trong khoảng {PH_MIN} - {PH_MAX}</li>
-          <li>Nồng độ Clo không nên vượt quá {CHLORINE_MAX} mg/L</li>
+          <li>Nồng độ Clo nên trong khoảng {CHLORINE_MIN} - {CHLORINE_MAX} mg/L</li>
           <li>Đo đạc và cập nhật thông số ít nhất 2 lần mỗi ngày</li>
           <li>Ghi rõ các bất thường vào phần ghi chú nếu có</li>
         </ul>
