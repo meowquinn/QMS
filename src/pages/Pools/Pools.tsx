@@ -5,21 +5,20 @@ import {
 } from 'antd';
 import { 
   PlusOutlined, EditOutlined, DeleteOutlined, 
-  SearchOutlined 
+  SearchOutlined
 } from '@ant-design/icons';
 import { FaSwimmingPool } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Mô hình dữ liệu cho hồ bơi
 interface Pool {
-  id: string;
+  id: number; // Thay đổi từ string sang number
   name: string;
-  size: string;
-  capacity: number;
-  depth: string;
-  location: string;
-  status: 'active' | 'maintenance' | 'closed';
-  lastCleaned: string;
+  size: number;      // Kích thước theo m3
+  capacity: number;  // Sức chứa (số người)
+  location: string;  // Vị trí hồ bơi
+  status: 'active' | 'maintenance' | 'closed';  // Trạng thái hoạt động
+  description?: string;
 }
 
 const PoolList: React.FC = () => {
@@ -33,6 +32,8 @@ const PoolList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   // State quản lý tìm kiếm
   const [searchText, setSearchText] = useState('');
+  // ID tự tăng cho hồ bơi mới
+  const [nextId, setNextId] = useState<number>(4); // Bắt đầu từ 4 vì mockPools đã có 3 bản ghi
 
   // Lấy thông tin người dùng và quyền từ context
   const { isAdmin } = useAuth();
@@ -44,34 +45,28 @@ const PoolList: React.FC = () => {
     setTimeout(() => {
       const mockPools: Pool[] = [
         {
-          id: '1',
+          id: 1,
           name: 'Hồ bơi Olympic',
-          size: '50m x 25m',
+          size: 1250,
           capacity: 2500,
-          depth: '2.0m - 3.0m',
           location: 'Khu A',
           status: 'active',
-          lastCleaned: '2025-05-10',
         },
         {
-          id: '2',
+          id: 2,
           name: 'Hồ bơi trẻ em',
-          size: '20m x 10m',
+          size: 200,
           capacity: 500,
-          depth: '0.5m - 1.0m',
           location: 'Khu B',
           status: 'active',
-          lastCleaned: '2025-05-12',
         },
         {
-          id: '3',
+          id: 3,
           name: 'Hồ bơi giải trí',
-          size: '30m x 15m',
+          size: 450,
           capacity: 1000,
-          depth: '1.2m - 1.8m',
           location: 'Khu C',
           status: 'maintenance',
-          lastCleaned: '2025-05-05',
         },
       ];
       setPools(mockPools);
@@ -118,7 +113,7 @@ const PoolList: React.FC = () => {
     form.validateFields().then(values => {
       const formData = {
         ...values,
-        id: editingPool?.id || `pool-${Date.now()}`
+        id: editingPool?.id || nextId // Sử dụng nextId thay vì tạo id từ Date.now()
       };
 
       if (editingPool) {
@@ -130,6 +125,7 @@ const PoolList: React.FC = () => {
       } else {
         // Thêm hồ bơi mới
         setPools([...pools, formData as Pool]);
+        setNextId(nextId + 1); // Tăng giá trị ID tự tăng
         message.success('Đã thêm hồ bơi mới thành công!');
       }
 
@@ -139,7 +135,7 @@ const PoolList: React.FC = () => {
   };
 
   // Xử lý xóa
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => { // Thay đổi kiểu tham số từ string sang number
     if (!isAdmin) {
       message.warning('Bạn không có quyền xóa hồ bơi');
       return;
@@ -208,6 +204,9 @@ const PoolList: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Tên hồ bơi
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -232,6 +231,9 @@ const PoolList: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPools.map((pool) => (
                   <tr key={pool.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {pool.id}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       <div className="flex items-center">
                         <FaSwimmingPool className="text-blue-500 mr-2" />
@@ -239,7 +241,7 @@ const PoolList: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {pool.size}
+                      {pool.size} m<sup>3</sup>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {pool.capacity} người
@@ -286,7 +288,7 @@ const PoolList: React.FC = () => {
 
                 {filteredPools.length === 0 && !loading && (
                   <tr>
-                    <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={isAdmin ? 7 : 6} className="px-6 py-8 text-center text-sm text-gray-500">
                       Không tìm thấy hồ bơi nào
                     </td>
                   </tr>
@@ -330,10 +332,10 @@ const PoolList: React.FC = () => {
 
             <Form.Item
               name="size"
-              label="Kích thước"
+              label="Kích thước (m³)"
               rules={[{ required: true, message: 'Vui lòng nhập kích thước hồ bơi!' }]}
             >
-              <Input placeholder="Ví dụ: 50m x 25m" />
+              <Input type="number" min={0} placeholder="Nhập kích thước" />
             </Form.Item>
 
             <Form.Item
@@ -342,14 +344,6 @@ const PoolList: React.FC = () => {
               rules={[{ required: true, message: 'Vui lòng nhập sức chứa!' }]}
             >
               <Input type="number" min={0} placeholder="Nhập sức chứa" />
-            </Form.Item>
-
-            <Form.Item
-              name="depth"
-              label="Độ sâu"
-              rules={[{ required: true, message: 'Vui lòng nhập độ sâu!' }]}
-            >
-              <Input placeholder="Ví dụ: 1.5m - 2.5m" />
             </Form.Item>
 
             <Form.Item
@@ -371,13 +365,13 @@ const PoolList: React.FC = () => {
                 <Select.Option value="closed">Đóng cửa</Select.Option>
               </Select>
             </Form.Item>
-            
+
             <Form.Item
-              name="lastCleaned"
-              label="Ngày vệ sinh gần nhất"
-              rules={[{ required: true, message: 'Vui lòng nhập ngày vệ sinh!' }]}
+              name="description"
+              label="Mô tả"
+              className="md:col-span-2"
             >
-              <Input type="date" />
+              <Input.TextArea rows={3} placeholder="Nhập mô tả hồ bơi" />
             </Form.Item>
           </div>
         </Form>

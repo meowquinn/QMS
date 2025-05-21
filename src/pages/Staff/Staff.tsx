@@ -209,8 +209,18 @@ const Staff: React.FC = () => {
     }
   };
 
-  // Cấu hình các cột trong bảng cho admin
   const adminColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (text: string) => (
+        <span className="text-xs text-gray-500 font-mono">
+          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+        </span>
+      ),
+    },
     {
       title: 'Nhân viên',
       dataIndex: 'name',
@@ -287,8 +297,19 @@ const Staff: React.FC = () => {
     }
   ];
 
-  // Cấu hình các cột trong bảng cho nhân viên thường
+  // Cũng cần cập nhật userColumns
   const userColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (text: string) => (
+        <span className="text-xs text-gray-500 font-mono">
+          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+        </span>
+      ),
+    },
     {
       title: 'Nhân viên',
       dataIndex: 'name',

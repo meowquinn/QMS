@@ -242,6 +242,7 @@ const QualityMeasurements: React.FC = () => {
 
   // Định nghĩa các cột trong bảng
   const columns: TableColumnsType<WaterQualityRecord> = [
+    {},
     {
       title: 'Hồ bơi',
       dataIndex: 'poolName',

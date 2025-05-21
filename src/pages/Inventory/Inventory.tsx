@@ -365,28 +365,31 @@ const InventoryStock: React.FC = () => {
   // Cấu hình cột bảng hóa chất
   const chemicalColumns = [
     {
-      title: 'Tên hóa chất',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string, record: Chemical) => (
-        <div>
-          <div className="font-medium">{text}</div>
-          <div className="text-xs text-gray-500">{record.type}</div>
-        </div>
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (text: string) => (
+        <span className="text-xs text-gray-500 font-mono">
+          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+        </span>
       ),
     },
     {
-      title: 'Tồn kho hiện tại',
+      title: 'Tên hóa chất',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Loại',
+      dataIndex: 'type',
+      key: 'type',
+    },
+    {
+      title: 'Số lượng hiện có',
       key: 'stock',
-      render: (_: string, record: Chemical) => (
-        <div>
-          <div className="text-lg font-medium">
-            {record.currentStock} {record.unit}
-          </div>
-          <div className="text-xs text-gray-500">
-            Nạp gần nhất: {record.lastRestocked.toLocaleDateString()}
-          </div>
-        </div>
+      render: (record: Chemical) => (
+        <span>{record.currentStock} {record.unit}</span>
       ),
     },
     {
@@ -410,7 +413,7 @@ const InventoryStock: React.FC = () => {
       key: 'action',
       render: (_: string, record: Chemical) => (
         <Space size="middle">
-          <Tooltip title="Sửa">
+          <Tooltip title="Sử dụng hóa chất">
             <Button
               icon={<EditOutlined />}
               type="primary"
@@ -429,17 +432,6 @@ const InventoryStock: React.FC = () => {
               size="small"
               className="bg-green-600"
           />
-          </Tooltip>
-          
-          <Tooltip title="Xem lịch sử">
-            <Button 
-              icon={<HistoryOutlined />} 
-              size="small"
-              onClick={() => {
-                setActiveTab("history");
-                setSearchText(record.name);
-              }}
-            />
           </Tooltip>
           <Popconfirm
             title="Bạn có chắc muốn xóa hóa chất này?"
@@ -461,14 +453,24 @@ const InventoryStock: React.FC = () => {
   // Cấu hình cột bảng lịch sử
   const historyColumns = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (text: string) => (
+        <span className="text-xs text-gray-500 font-mono">
+          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+        </span>
+      ),
+    },
+    {
       title: 'Thời gian',
       dataIndex: 'timestamp',
       key: 'timestamp',
-      render: (date: Date) => (
-        <div>
-          <div>{date.toLocaleDateString()}</div>
-          <div className="text-xs text-gray-500">{date.toLocaleTimeString()}</div>
-        </div>
+      render: (timestamp: Date) => (
+        <span>
+          {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+        </span>
       ),
     },
     {

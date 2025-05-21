@@ -25,6 +25,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       // Thông tin đăng nhập mẫu
       const users = [
         {
+          id: 'staff-001',
           username: 'admin',
           password: 'admin123',
           name: 'Quản trị viên',
@@ -32,6 +33,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           access: 'admin'
         },
         {
+          id: 'staff-002',
           username: 'staff',
           password: 'staff123',
           name: 'Nhân viên',
@@ -46,8 +48,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       
       if (user) {
         message.success('Đăng nhập thành công!');
-        // Truyền thông tin người dùng lên component cha
+        // Truyền thông tin người dùng lên component cha, bao gồm ID
         onLogin({
+          id: user.id,         // Thêm ID
           username: user.username,
           name: user.name,
           role: user.role,
