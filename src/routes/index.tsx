@@ -1,16 +1,17 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/layouts/MainLayout/MainLayout';
+import { Spin } from 'antd';
 
-// Loading component
+// Loading component với Spin từ Ant Design để UX tốt hơn
 const LoadingFallback = () => (
-  <div className="h-screen w-screen flex items-center justify-center">
-    <div className="text-xl font-bold">Đang tải...</div>
+  <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+    <Spin size="large" tip="Đang tải..." />
   </div>
 );
 
-// Import các trang
+// Import các trang với React.lazy
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const WaterParameters = React.lazy(() => import('../pages/QualityTracking/WaterParameters'));
 const WaterQualityRecords = React.lazy(() => import('../pages/QualityTracking/WaterQualityRecords'));
@@ -19,16 +20,40 @@ const Staff = React.lazy(() => import('../pages/Staff/Staff'));
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
 const Login = React.lazy(() => import('../pages/Login/Login'));
 
-// Trang bảo vệ cho Admin
+// Protected Route component
+const ProtectedRoute = ({ isAllowed = false, redirectPath = '/login', children }: {
+  isAllowed: boolean;
+  redirectPath?: string;
+  children?: React.ReactNode;
+}) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return <>{children || <Outlet />}</>;
+};
+
+// Admin Route component
+const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: {
+  isAdmin: boolean;
+  redirectPath?: string;
+  children?: React.ReactNode;
+}) => {
+  if (!isAdmin) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return <>{children || <Outlet />}</>;
+};
 
 const AppRoutes: React.FC = () => {
-  const { user, login } = useAuth();
+  const { user, login, isAdmin } = useAuth();
   
-  // Thêm logging để debug
+  // Logging để debug
   useEffect(() => {
-    console.log('AppRoutes mounted');
     console.log('Current user:', user);
-  }, [user]);
+    console.log('Is admin:', isAdmin);
+  }, [user, isAdmin]);
 
   return (
     <Router>
@@ -36,34 +61,28 @@ const AppRoutes: React.FC = () => {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={
-            user ? <Navigate to="/dashboard" /> : <Login onLogin={login} />
+            user ? <Navigate to="/dashboard" replace /> : <Login onLogin={login} />
           } />
+          
           <Route path="/" element={<Navigate to="/login" replace />} />
           
-          {/* Protected Routes với Layout chung */}
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={
-              user ? <Dashboard /> : <Navigate to="/login" />
-            } />
-            
-            {/* Admin Routes */}
-            <Route path="/staff" element={
-              user ? <Staff /> : <Navigate to="/login" />
-            } />
-            
-            {/* Regular Protected Routes */}
-            <Route path="/pools" element={
-              user ? <PoolList /> : <Navigate to="/login" />
-            } />
-            <Route path="/inventory" element={
-              user ? <Inventory /> : <Navigate to="/login" />
-            } />
-            <Route path="/quality/records" element={
-              user ? <WaterQualityRecords /> : <Navigate to="/login" />
-            } />
-            <Route path="/quality/parameters" element={
-              user ? <WaterParameters /> : <Navigate to="/login" />
-            } />
+          {/* Protected Routes trong MainLayout */}
+          <Route element={<ProtectedRoute isAllowed={!!user} />}>
+            <Route element={<MainLayout />}>
+              {/* Dashboard - cho tất cả người dùng đã đăng nhập */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              
+              {/* Admin Routes */}
+              <Route element={<AdminRoute isAdmin={isAdmin} />}>
+                <Route path="/staff" element={<Staff />} />
+              </Route>
+              
+              {/* Routes cho tất cả người dùng đã đăng nhập */}
+              <Route path="/pools" element={<PoolList />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/quality/records" element={<WaterQualityRecords />} />
+              <Route path="/quality/parameters" element={<WaterParameters />} />
+            </Route>
           </Route>
           
           {/* Catch All Route */}
