@@ -46,8 +46,8 @@ const Staff: React.FC = () => {
   // Xử lý tìm kiếm nhân viên
   useEffect(() => {
     const filteredData = staffList.filter(staff => 
-      staff.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      staff.role.toLowerCase().includes(searchText.toLowerCase()) ||
+      staff.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
+      staff.sRole.toLowerCase().includes(searchText.toLowerCase()) ||
       (isAdmin && staff.username.toLowerCase().includes(searchText.toLowerCase())) ||
       (isAdmin && staff.email.toLowerCase().includes(searchText.toLowerCase()))
     );
@@ -72,10 +72,16 @@ const Staff: React.FC = () => {
       return;
     }
     setEditingStaff(staff);
-    
+
     // Không hiển thị mật khẩu khi chỉnh sửa
-    const { password, ...restData } = staff; // eslint-disable-line
-    form.setFieldsValue(restData);
+    form.setFieldsValue({
+      ...staff,
+      // Đặt giá trị cho các trường trong form theo đúng tên trường mới
+      fullName: staff.fullName,
+      sRole: staff.sRole,
+      phoneNumber: staff.phoneNumber,
+      sAddress: staff.sAddress
+    });
     setIsModalVisible(true);
   };
 
@@ -95,19 +101,19 @@ const Staff: React.FC = () => {
         const updatedData = {
           ...values,
           // Chỉ gửi mật khẩu mới nếu người dùng đã nhập
-          ...(values.password ? { password: values.password } : {})
+          ...(values.sPassword ? { sPassword: values.sPassword } : {})
         };
         
-        await updateStaff(editingStaff.id, updatedData);
+        await updateStaff(editingStaff.staffId, updatedData);
         setStaffList(prev => prev.map(staff => 
-          staff.id === editingStaff.id ? { ...staff, ...updatedData } : staff
+          staff.staffId === editingStaff.staffId ? { ...staff, ...updatedData } : staff
         ));
         message.success('Đã cập nhật thông tin nhân viên thành công!');
       } else {
         // Thêm nhân viên mới
         const staffData = {
           ...values,
-          password: values.password || 'password123' // Mật khẩu mặc định nếu không nhập
+          sPassword: values.sPassword || 'password123' // Mật khẩu mặc định nếu không nhập
         };
         
         const newStaff = await createStaff(staffData);
@@ -127,15 +133,15 @@ const Staff: React.FC = () => {
   };
 
   // Xử lý xóa nhân viên
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (staffId: number) => {
     if (!isAdmin) {
       message.warning('Bạn không có quyền xóa nhân viên');
       return;
     }
     
     try {
-      await deleteStaff(id);
-      setStaffList(prev => prev.filter(staff => staff.id !== id));
+      await deleteStaff(staffId);
+      setStaffList(prev => prev.filter(staff => staff.staffId !== staffId));
       message.success('Đã xóa nhân viên thành công!');
     } catch (error) {
       message.error('Không thể xóa nhân viên này');
@@ -158,29 +164,29 @@ const Staff: React.FC = () => {
   const adminColumns = [
     {
       title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'staffId',
+      key: 'staffId',
       width: 100,
-      render: (id: number) => (
+      render: (staffId: number) => (
         <span className="text-xs text-gray-500">
-          {id}
+          {staffId}
         </span>
       ),
     },
     {
       title: 'Nhân viên',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'fullName',
+      key: 'fullName',
       render: (_text: string, record: StaffMember) => (
         <div className="font-medium text-gray-800">
-          {record.name}
+          {record.fullName}
         </div>
       ),
     },
     {
       title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
+      dataIndex: 'sRole',
+      key: 'sRole',
     },
     {
       title: 'Tên đăng nhập',
@@ -192,7 +198,7 @@ const Staff: React.FC = () => {
       key: 'contact',
       render: (_text: string, record: StaffMember) => (
         <Space size="middle">
-          <Tooltip title={record.phone}>
+          <Tooltip title={record.phoneNumber}>
             <PhoneOutlined className="text-blue-600" />
           </Tooltip>
           <Tooltip title={record.email}>
@@ -224,7 +230,7 @@ const Staff: React.FC = () => {
           </Button>
           <Popconfirm
             title="Bạn có chắc chắn muốn xóa nhân viên này?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record.staffId)}
             okText="Xóa"
             cancelText="Hủy"
           >
@@ -247,36 +253,36 @@ const Staff: React.FC = () => {
   const userColumns = [
     {
       title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'staffId',
+      key: 'staffId',
       width: 100,
-      render: (id: number | string) => (
+      render: (staffId: number) => (
         <span className="text-xs text-gray-500 font-mono">
-          {typeof id === 'string' && id.length > 10 ? `${id.substring(0, 10)}...` : id}
+          {staffId}
         </span>
       ),
     },
     {
       title: 'Nhân viên',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'fullName',
+      key: 'fullName',
       render: (_text: string, record: StaffMember) => (
         <div className="font-medium text-gray-800">
-          {record.name}
+          {record.fullName}
         </div>
       ),
     },
     {
       title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
+      dataIndex: 'sRole',
+      key: 'sRole',
     },
     {
       title: 'Liên hệ',
       key: 'contact',
       render: (_text: string, record: StaffMember) => (
         <Space size="middle">
-          <Tooltip title={record.phone}>
+          <Tooltip title={record.phoneNumber}>
             <PhoneOutlined className="text-blue-600" />
           </Tooltip>
           <Tooltip title={record.email}>
@@ -323,7 +329,7 @@ const Staff: React.FC = () => {
           <Table
             dataSource={filteredStaff}
             columns={columns}
-            rowKey="id"
+            rowKey="staffId"
             loading={loading}
             pagination={{
               pageSize: 10,
@@ -334,14 +340,14 @@ const Staff: React.FC = () => {
             expandable={isAdmin ? {
               expandedRowRender: record => (
                 <div className="p-2">
-                  {record.address && (
+                  {record.sAddress && (
                     <div className="text-sm mb-1">
-                      <span className="font-semibold">Địa chỉ:</span> {record.address}
+                      <span className="font-semibold">Địa chỉ:</span> {record.sAddress}
                     </div>
                   )}
                 </div>
               ),
-              rowExpandable: record => !!record.address,
+              rowExpandable: record => !!record.sAddress,
             } : undefined}
             scroll={{ x: 'max-content' }}
           />
@@ -367,7 +373,7 @@ const Staff: React.FC = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
-              name="name"
+              name="fullName"
               label="Họ và tên"
               rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
             >
@@ -386,7 +392,7 @@ const Staff: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="phone"
+              name="phoneNumber"
               label="Số điện thoại"
               rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
             >
@@ -394,7 +400,7 @@ const Staff: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="role"
+              name="sRole"
               label="Vai trò"
               rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
             >
@@ -417,7 +423,7 @@ const Staff: React.FC = () => {
                     }
                     
                     const isDuplicate = staffList.some(
-                      staff => staff.username === value && staff.id !== (editingStaff?.id || 0)
+                      staff => staff.username === value && staff.staffId !== (editingStaff?.staffId || 0)
                     );
                     
                     if (isDuplicate) {
@@ -432,7 +438,7 @@ const Staff: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="password"
+              name="sPassword"
               label={editingStaff ? "Đặt lại mật khẩu" : "Mật khẩu"}
               rules={[
                 { 
@@ -464,7 +470,7 @@ const Staff: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="address"
+              name="sAddress"
               label="Địa chỉ"
               className="md:col-span-2"
             >
