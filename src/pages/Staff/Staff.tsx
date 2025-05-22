@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAllStaff, createStaff, updateStaff, deleteStaff } from '../../services/staffService';
 import { 
   Table, Input, Button, Modal, Form, 
   Select, Space, message, Tag, Popconfirm,
@@ -10,19 +11,7 @@ import {
   MailOutlined, LockOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
-
-// Cập nhật lại interface theo yêu cầu
-interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  username: string;     // Tên đăng nhập
-  password: string;     // Mật khẩu
-  phone: string;
-  email: string;
-  access: 'admin' | 'user';
-  address?: string;     // Địa chỉ (tùy chọn)
-}
+import type { StaffMember } from '../../services/types';
 
 const Staff: React.FC = () => {
   // State quản lý
@@ -35,83 +24,23 @@ const Staff: React.FC = () => {
   const [form] = Form.useForm();
   const { isAdmin } = useAuth();
 
-  // Tải dữ liệu mẫu
+  // Tải dữ liệu từ API
   useEffect(() => {
-    // Giả lập API call để lấy dữ liệu
-    setTimeout(() => {
-      const mockData: StaffMember[] = [
-        {
-          id: '1',
-          name: 'Nguyễn Văn An',
-          role: 'Quản lý',
-          username: 'nguyenvanan',
-          password: 'password123',
-          phone: '0901234567',
-          email: 'an.nguyen@example.com',
-          access: 'admin',
-          address: '123 Đường Nguyễn Huệ, Quận 1, TP.HCM',
-        },
-        {
-          id: '2',
-          name: 'Trần Thị Bình',
-          role: 'Nhân viên đo đạc',
-          username: 'tranthibinh',
-          password: 'password123',
-          phone: '0912345678',
-          email: 'binh.tran@example.com',
-          access: 'user',
-          address: '456 Đường Lê Lợi, Quận 3, TP.HCM',
-        },
-        {
-          id: '3',
-          name: 'Lê Văn Cường',
-          role: 'Kỹ thuật viên',
-          username: 'levancuong',
-          password: 'password123',
-          phone: '0923456789',
-          email: 'cuong.le@example.com',
-          access: 'user',
-          address: '789 Đường Hai Bà Trưng, Quận 5, TP.HCM',
-        },
-        {
-          id: '4',
-          name: 'Phạm Thị Dung',
-          role: 'Nhân viên vệ sinh',
-          username: 'phamthidung',
-          password: 'password123',
-          phone: '0934567890',
-          email: 'dung.pham@example.com',
-          access: 'user',
-          address: '101 Đường Nguyễn Du, Quận 1, TP.HCM'
-        },
-        {
-          id: '5',
-          name: 'Hoàng Văn Đức',
-          role: 'Nhân viên đo đạc',
-          username: 'hoangvanduc',
-          password: 'password123',
-          phone: '0945678901',
-          email: 'duc.hoang@example.com',
-          access: 'user',
-          address: '202 Đường Võ Văn Tần, Quận 3, TP.HCM',
-        },
-        {
-          id: '6',
-          name: 'Vũ Thị Hà',
-          role: 'Kỹ thuật viên',
-          username: 'vuthiha',
-          password: 'password123',
-          phone: '0956789012',
-          email: 'ha.vu@example.com',
-          access: 'admin',
-          address: '303 Đường Điện Biên Phủ, Quận Bình Thạnh, TP.HCM'
-        },
-      ];
+    const fetchStaff = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllStaff();
+        setStaffList(data);
+        setFilteredStaff(data);
+      } catch (error) {
+        message.error('Không thể tải danh sách nhân viên');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setStaffList(mockData);
-      setFilteredStaff(mockData);
-      setLoading(false);
-    }, 1000);
+    fetchStaff();
   }, []);
 
   // Xử lý tìm kiếm nhân viên
@@ -145,7 +74,7 @@ const Staff: React.FC = () => {
     setEditingStaff(staff);
     
     // Không hiển thị mật khẩu khi chỉnh sửa
-    const { ...restData } = staff;
+    const { password, ...restData } = staff; // eslint-disable-line
     form.setFieldsValue(restData);
     setIsModalVisible(true);
   };
@@ -157,44 +86,61 @@ const Staff: React.FC = () => {
   };
 
   // Xử lý thêm/sửa nhân viên
-  const handleSubmit = () => {
-    form.validateFields().then(values => {
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      
       if (editingStaff) {
         // Cập nhật nhân viên hiện có
-        const updatedStaff = {
-          ...editingStaff,
+        const updatedData = {
           ...values,
-          // Nếu mật khẩu được nhập mới thì cập nhật, nếu không giữ nguyên
-          password: values.password ? values.password : editingStaff.password
+          // Chỉ gửi mật khẩu mới nếu người dùng đã nhập
+          ...(values.password ? { password: values.password } : {})
         };
-        setStaffList(staffList.map(staff => 
-          staff.id === editingStaff.id ? updatedStaff : staff
+        
+        await updateStaff(editingStaff.id, updatedData);
+        setStaffList(prev => prev.map(staff => 
+          staff.id === editingStaff.id ? { ...staff, ...updatedData } : staff
         ));
         message.success('Đã cập nhật thông tin nhân viên thành công!');
       } else {
         // Thêm nhân viên mới
-        const newStaff = {
+        const staffData = {
           ...values,
-          id: `staff-${Date.now()}`,
           password: values.password || 'password123' // Mật khẩu mặc định nếu không nhập
         };
-        setStaffList([...staffList, newStaff]);
+        
+        const newStaff = await createStaff(staffData);
+        setStaffList(prev => [...prev, newStaff]);
         message.success('Đã thêm nhân viên mới thành công!');
       }
 
       setIsModalVisible(false);
       form.resetFields();
-    });
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error('Có lỗi xảy ra khi xử lý dữ liệu nhân viên');
+      }
+    }
   };
 
   // Xử lý xóa nhân viên
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!isAdmin) {
       message.warning('Bạn không có quyền xóa nhân viên');
       return;
     }
-    setStaffList(staffList.filter(staff => staff.id !== id));
-    message.success('Đã xóa nhân viên thành công!');
+    
+    try {
+      await deleteStaff(id);
+      setStaffList(prev => prev.filter(staff => staff.id !== id));
+      message.success('Đã xóa nhân viên thành công!');
+    } catch (error) {
+      message.error('Không thể xóa nhân viên này');
+      console.error(error);
+    }
   };
 
   // Render quyền truy cập
@@ -215,9 +161,9 @@ const Staff: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 100,
-      render: (text: string) => (
-        <span className="text-xs text-gray-500 font-mono">
-          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+      render: (id: number) => (
+        <span className="text-xs text-gray-500">
+          {id}
         </span>
       ),
     },
@@ -297,16 +243,16 @@ const Staff: React.FC = () => {
     }
   ];
 
-  // Cũng cần cập nhật userColumns
+  // Columns cho user thường
   const userColumns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
       width: 100,
-      render: (text: string) => (
+      render: (id: number | string) => (
         <span className="text-xs text-gray-500 font-mono">
-          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+          {typeof id === 'string' && id.length > 10 ? `${id.substring(0, 10)}...` : id}
         </span>
       ),
     },
@@ -456,7 +402,6 @@ const Staff: React.FC = () => {
                 <Select.Option value="Quản lý">Quản lý</Select.Option>
                 <Select.Option value="Kỹ thuật viên">Kỹ thuật viên</Select.Option>
                 <Select.Option value="Nhân viên đo đạc">Nhân viên đo đạc</Select.Option>
-                <Select.Option value="Nhân viên vệ sinh">Nhân viên vệ sinh</Select.Option>
               </Select>
             </Form.Item>
 
@@ -467,14 +412,12 @@ const Staff: React.FC = () => {
                 { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
                 {
                   validator(_, value) {
-                    // Nếu đang chỉnh sửa và tên đăng nhập không thay đổi, hoặc là tạo mới
                     if (!value || (editingStaff && value === editingStaff.username)) {
                       return Promise.resolve();
                     }
                     
-                    // Kiểm tra xem tên đăng nhập đã tồn tại chưa
                     const isDuplicate = staffList.some(
-                      staff => staff.username === value && staff.id !== (editingStaff?.id || '')
+                      staff => staff.username === value && staff.id !== (editingStaff?.id || 0)
                     );
                     
                     if (isDuplicate) {
