@@ -6,19 +6,25 @@ const API_URL = 'https://localhost:7021/api';
 
 // Interface cho dữ liệu đăng nhập trả về
 interface LoginResponse {
-  id: number;
+  staffId: number;  // Đổi từ id sang staffId theo SQL
   username: string;
-  name: string;
-  role: string;
+  fullName: string;  // Đổi từ name sang fullName
+  sRole: string;     // Đổi từ role sang sRole
   access: string;
   token: string;
+  email: string;     // Thêm field email
+  phoneNumber: string; // Thêm field phoneNumber
+  sAddress?: string;   // Thêm field sAddress, optional
 }
 
-// Hàm đăng nhập - giữ nguyên
+// Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
     const response = await axios.post<LoginResponse>(`${API_URL}/Auth/login`, 
-      { username, password },
+      { 
+        username, 
+        sPassword: password // Đổi từ password sang sPassword
+      },
       {
         headers: {
           'Content-Type': 'application/json'
@@ -28,11 +34,14 @@ export const login = async (username: string, password: string): Promise<LoginRe
     
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify({
-      id: response.data.id,
+      staffId: response.data.staffId,         // Cập nhật theo đúng tên trường
       username: response.data.username,
-      name: response.data.name,
-      role: response.data.role,
-      access: response.data.access
+      fullName: response.data.fullName,       // Cập nhật theo đúng tên trường
+      sRole: response.data.sRole,             // Cập nhật theo đúng tên trường
+      access: response.data.access,
+      email: response.data.email,             // Thêm email
+      phoneNumber: response.data.phoneNumber, // Thêm phoneNumber
+      sAddress: response.data.sAddress        // Thêm sAddress
     }));
     
     return response.data;
@@ -52,7 +61,19 @@ export const isAuthenticated = (): boolean => {
   return localStorage.getItem('token') !== null;
 };
 
-export const getCurrentUser = () => {
+// Cập nhật interface cho user từ localStorage
+interface User {
+  staffId: number;
+  username: string;
+  fullName: string;
+  sRole: string;
+  access: string;
+  email: string;
+  phoneNumber: string;
+  sAddress?: string;
+}
+
+export const getCurrentUser = (): User | null => {
   const userStr = localStorage.getItem('user');
   if (!userStr) return null;
   
