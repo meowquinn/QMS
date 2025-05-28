@@ -20,7 +20,7 @@ interface LoginResponse {
 // Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await axios.post<LoginResponse>(`${API_URL}/Auth/login`, 
+    const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, 
       { 
         username, 
         sPassword: password // Đổi từ password sang sPassword

@@ -67,7 +67,7 @@ const InventoryStock: React.FC = () => {
     setTimeout(() => {
       const mockChemicals: Chemical[] = [
         {
-          id: "chem-1",
+          id: 1,  // Đổi từ "chem-1" sang 1
           name: "Chlorine",
           type: "Chất khử trùng",
           currentStock: 75,
@@ -78,7 +78,7 @@ const InventoryStock: React.FC = () => {
           description: "Chất khử trùng chính để diệt khuẩn"
         },
         {
-          id: "chem-2",
+          id: 2,  // Đổi từ "chem-2" sang 2
           name: "Sodium Bicarbonate",
           type: "Điều chỉnh pH",
           currentStock: 45,
@@ -143,7 +143,7 @@ const InventoryStock: React.FC = () => {
       const mockAdjustmentHistory: AdjustmentRecord[] = [
         {
           id: "adj-1",
-          chemicalId: "chem-1",
+          chemicalId: 1,  // Đổi từ "chem-1" sang 1
           chemicalName: "Chlorine",
           poolId: "pool-1",
           poolName: "Hồ bơi chính",
@@ -155,7 +155,7 @@ const InventoryStock: React.FC = () => {
         },
         {
           id: "rst-1",
-          chemicalId: "chem-1",
+          chemicalId: 1,
           chemicalName: "Chlorine",
           poolId: "",
           poolName: "",
