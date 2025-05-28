@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
-import { UserOutlined, LockOutlined, CopyOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { login } from '../../services/authService';
 
@@ -18,27 +18,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Tài khoản mẫu cứng
-  const sampleAccounts = [
-    { username: 'nguyenvanan', role: 'Quản trị viên' },
-    { username: 'tranthibinh', role: 'Nhân viên' }
-  ];
-
-  // Hàm sử dụng tài khoản mẫu
-  const useSampleAccount = (username: string) => {
-    form.setFieldsValue({
-      username,
-      password: 'password123'
-    });
-  };
-
   const onFinish = async (values: LoginFormValues) => {
     try {
       setLoading(true);
-      console.log('Đang đăng nhập với:', values);
       
+      // Gọi API login với tài khoản và mật khẩu từ form
       const userData = await login(values.username, values.password);
-      console.log('Kết quả đăng nhập:', userData);
       
       message.success('Đăng nhập thành công!');
       
@@ -122,25 +107,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </Button>
             </Form.Item>
 
-            {/* Thông tin tài khoản mẫu cứng */}
+            {/* Hướng dẫn */}
             <div className="bg-blue-50 p-3 rounded-md mt-4">
-              <p className="text-sm text-blue-800 font-medium mb-2">Tài khoản mẫu:</p>
-              
-              {sampleAccounts.map((account, index) => (
-                <div key={index} className="flex justify-between items-center mb-1">
-                  <p className="text-xs text-blue-700">
-                    - {account.role}: <b>{account.username} / password123</b>
-                  </p>
-                  <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<CopyOutlined />} 
-                    onClick={() => useSampleAccount(account.username)}
-                    className="text-blue-500 hover:text-blue-700"
-                    title="Dùng tài khoản này"
-                  />
-                </div>
-              ))}
+              <p className="text-sm text-blue-800 font-medium">Hướng dẫn đăng nhập:</p>
+              <p className="text-xs text-blue-700 mt-1">
+                Vui lòng sử dụng tài khoản và mật khẩu được cấp để đăng nhập vào hệ thống.
+              </p>
+              <p className="text-xs text-blue-700 mt-1">
+                Nếu quên mật khẩu, vui lòng liên hệ quản trị viên để được hỗ trợ.
+              </p>
             </div>
           </Form>
           
