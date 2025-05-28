@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
-import { login } from '../../services/authService';
 
 
 interface LoginProps {
@@ -18,37 +17,51 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const onFinish = async (values: LoginFormValues) => {
-    try {
-      setLoading(true);
+  const onFinish = (values: LoginFormValues) => {
+    setLoading(true);
+    
+    // Giả lập API call
+    setTimeout(() => {
+      // Thông tin đăng nhập mẫu
+      const users = [
+        {
+          id: 'staff-001',
+          username: 'admin',
+          password: 'admin123',
+          name: 'Quản trị viên',
+          role: 'Quản lý hệ thống',
+          access: 'admin'
+        },
+        {
+          id: 'staff-002',
+          username: 'staff',
+          password: 'staff123',
+          name: 'Nhân viên',
+          role: 'Nhân viên đo đạc',
+          access: 'user'
+        }
+      ];
       
-      // Gọi API login với tài khoản và mật khẩu từ form
-      const userData = await login(values.username, values.password);
+      const user = users.find(
+        u => u.username === values.username && u.password === values.password
+      );
       
-      message.success('Đăng nhập thành công!');
-      
-      // Truyền thông tin người dùng lên component cha
-      onLogin({
-        staffId: userData.staffId,
-        username: userData.username,
-        fullName: userData.fullName,
-        sRole: userData.sRole,
-        access: userData.access,
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        sAddress: userData.sAddress
-      });
-      
-    } catch (error) {
-      console.error('Chi tiết lỗi đăng nhập:', error);
-      if (error instanceof Error) {
-        message.error(error.message);
+      if (user) {
+        message.success('Đăng nhập thành công!');
+        // Truyền thông tin người dùng lên component cha, bao gồm ID
+        onLogin({
+          id: user.id,         // Thêm ID
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          access: user.access
+        });
       } else {
         message.error('Tên đăng nhập hoặc mật khẩu không đúng!');
       }
-    } finally {
+      
       setLoading(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -107,24 +120,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </Button>
             </Form.Item>
 
-            {/* Hướng dẫn */}
+            {/* Thông tin mẫu */}
             <div className="bg-blue-50 p-3 rounded-md mt-4">
-              <p className="text-sm text-blue-800 font-medium">Hướng dẫn đăng nhập:</p>
+              <p className="text-sm text-blue-800 font-medium">Thông tin đăng nhập mẫu:</p>
               <p className="text-xs text-blue-700 mt-1">
-                Vui lòng sử dụng tài khoản và mật khẩu được cấp để đăng nhập vào hệ thống.
+                - Quản trị viên: <b>admin / admin123</b>
               </p>
-              <p className="text-xs text-blue-700 mt-1">
-                Nếu quên mật khẩu, vui lòng liên hệ quản trị viên để được hỗ trợ.
+              <p className="text-xs text-blue-700">
+                - Nhân viên: <b>staff / staff123</b>
               </p>
             </div>
           </Form>
           
           {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              © 2024 PoolQMS - Hệ thống quản lý chất lượng hồ bơi
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>
