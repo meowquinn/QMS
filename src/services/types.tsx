@@ -18,5 +18,4 @@ export interface Pool {
   depth: number;             // Giữ nguyên - khớp với database
   pLocation: string;         // Đổi từ location sang pLocation
   pStatus: string;           // Đổi từ status sang pStatus và kiểu dữ liệu đổi từ enum sang string
-  lastCleaningDate?: string; // Đổi từ lastMaintenance sang lastCleaningDate
 }
