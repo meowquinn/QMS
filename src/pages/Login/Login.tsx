@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, CopyOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { login } from '../../services/authService';
 
@@ -18,20 +18,36 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  // Tài khoản mẫu cứng
+  const sampleAccounts = [
+    { username: 'nguyenvanan', role: 'Quản trị viên' },
+    { username: 'tranthibinh', role: 'Nhân viên' }
+  ];
+
+  // Hàm sử dụng tài khoản mẫu
+  const useSampleAccount = (username: string) => {
+    form.setFieldsValue({
+      username,
+      password: 'password123'
+    });
+  };
+
   const onFinish = async (values: LoginFormValues) => {
     try {
       setLoading(true);
+      console.log('Đang đăng nhập với:', values);
       
       const userData = await login(values.username, values.password);
+      console.log('Kết quả đăng nhập:', userData);
       
       message.success('Đăng nhập thành công!');
       
       // Truyền thông tin người dùng lên component cha
       onLogin({
-        staffId: userData.staffId,       // Cập nhật theo tên trường từ API
+        staffId: userData.staffId,
         username: userData.username,
-        fullName: userData.fullName,     // Cập nhật theo tên trường từ API
-        sRole: userData.sRole,           // Cập nhật theo tên trường từ API
+        fullName: userData.fullName,
+        sRole: userData.sRole,
         access: userData.access,
         email: userData.email,
         phoneNumber: userData.phoneNumber,
@@ -39,6 +55,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       });
       
     } catch (error) {
+      console.error('Chi tiết lỗi đăng nhập:', error);
       if (error instanceof Error) {
         message.error(error.message);
       } else {
@@ -105,15 +122,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </Button>
             </Form.Item>
 
-            {/* Thông tin mẫu - có thể giữ lại cho testing */}
+            {/* Thông tin tài khoản mẫu cứng */}
             <div className="bg-blue-50 p-3 rounded-md mt-4">
-              <p className="text-sm text-blue-800 font-medium">Thông tin đăng nhập mẫu:</p>
-              <p className="text-xs text-blue-700 mt-1">
-                - Quản trị viên: <b>nguyenvanan / password123</b>
-              </p>
-              <p className="text-xs text-blue-700">
-                - Nhân viên: <b>tranthibinh / password123</b>
-              </p>
+              <p className="text-sm text-blue-800 font-medium mb-2">Tài khoản mẫu:</p>
+              
+              {sampleAccounts.map((account, index) => (
+                <div key={index} className="flex justify-between items-center mb-1">
+                  <p className="text-xs text-blue-700">
+                    - {account.role}: <b>{account.username} / password123</b>
+                  </p>
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<CopyOutlined />} 
+                    onClick={() => useSampleAccount(account.username)}
+                    className="text-blue-500 hover:text-blue-700"
+                    title="Dùng tài khoản này"
+                  />
+                </div>
+              ))}
             </div>
           </Form>
           
