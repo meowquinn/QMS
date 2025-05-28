@@ -41,3 +41,14 @@ export const deleteStaff = async (id: number) => {
     throw new Error('Không thể xóa nhân viên');
   }
 };
+
+// Thêm API lấy thông tin của nhân viên hiện tại
+export const getCurrentStaffInfo = async () => {
+  try {
+    const response = await api.get('/Staff/current');
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Không thể lấy thông tin nhân viên hiện tại');
+  }
+};

@@ -29,9 +29,32 @@ const Staff: React.FC = () => {
     const fetchStaff = async () => {
       try {
         setLoading(true);
-        const data = await getAllStaff();
-        setStaffList(data);
-        setFilteredStaff(data);
+        
+        // Nếu là admin, lấy tất cả nhân viên
+        if (isAdmin) {
+          const data = await getAllStaff();
+          setStaffList(data);
+          setFilteredStaff(data);
+        } else {
+          // Nếu là user thường, chỉ lấy thông tin của chính mình
+          // Hoặc một danh sách hạn chế (tùy thuộc vào API của bạn)
+          try {
+            const data = await getAllStaff();
+            setStaffList(data);
+            setFilteredStaff(data);
+          } catch (error) {
+            if (typeof error === 'object' && error !== null && 'response' in error && (error as { response?: { status?: number } }).response?.status === 403) {
+              // Nếu không có quyền xem tất cả, thử lấy thông tin cá nhân
+              const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+              // Tạo mảng chỉ có user hiện tại
+              const userData = currentUser.staffId ? [currentUser] : [];
+              setStaffList(userData);
+              setFilteredStaff(userData);
+            } else {
+              throw error; // Ném lỗi để xử lý bên ngoài
+            }
+          }
+        }
       } catch (error) {
         message.error('Không thể tải danh sách nhân viên');
         console.error(error);
@@ -41,7 +64,7 @@ const Staff: React.FC = () => {
     };
 
     fetchStaff();
-  }, []);
+  }, [isAdmin]);
 
   // Xử lý tìm kiếm nhân viên
   useEffect(() => {
