@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography } from 'antd';
+import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import type { Moment } from 'moment';
 import moment from 'moment';
 import { InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import { getAllPools } from '../../services/poolService';
+import { addWaterQualityParameter } from '../../services/waterQualityService';
+import { useAuth } from '../../contexts/AuthContext';
+import type { Pool } from '../../services/types';
+
+// Import User interface từ authService để TypeScript nhận diện đúng kiểu dữ liệu
+import { getCurrentUser } from '../../services/authService';
+// Hoặc có thể import interface User từ authService nếu đã export
 
 const { Option } = Select;
 const { Text } = Typography;
 
-// Define threshold constants
+// Định nghĩa các ngưỡng tiêu chuẩn
 const PH_MIN = 7.0;
 const PH_MAX = 7.6;
 const CHLORINE_MIN = 0.5; // mg/L 
 const CHLORINE_MAX = 3.0; // mg/L 
+
+
+// Định nghĩa trạng thái đo
+type MeasurementStatus = 'normal' | 'warning' | 'critical';
 
 // Gợi ý hoá chất dựa vào thông số
 interface ChemicalSuggestion {
@@ -20,38 +33,68 @@ interface ChemicalSuggestion {
   recommendation: string;
 }
 
+// Cập nhật interface form data để phù hợp hơn với WaterQualityRecord
 interface WaterParameterFormData {
   poolId: string;
-  timestamp: Date | null;  // Đã gộp date và time thành timestamp
+  timestamp: Date | null;
   temperature: number | null;
   pH: number | null;
   chlorine: number | null;
   notes: string;
 }
 
+// Interface dữ liệu gửi đến API
+interface WaterQualitySubmitData {
+  poolId: number;
+  poolName: string;
+  pTimestamp: Date;
+  temperatureC: number;
+  pHLevel: number;
+  chlorineMgPerL: number;
+  notes: string;
+  createdById?: number;
+}
+
 const WaterParameters: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState<WaterParameterFormData>({
     poolId: '',
-    timestamp: null,  // Trường duy nhất cho ngày và giờ
+    timestamp: null,
     temperature: null,
     pH: null,
     chlorine: null,
     notes: '',
   });
   
-  // Bỏ state warnings không dùng nữa
   const [suggestions, setSuggestions] = useState<ChemicalSuggestion[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
+  // Thêm state cho danh sách hồ bơi và loading
+  const [pools, setPools] = useState<Pool[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample pool data - would come from API in a real application
-  const pools = [
-    { id: 'pool1', name: 'Hồ bơi chính' },
-    { id: 'pool2', name: 'Hồ bơi trẻ em' },
-    { id: 'pool3', name: 'Hồ bơi spa' },
-  ];
+  // Fetch danh sách hồ bơi từ API
+  useEffect(() => {
+    const fetchPools = async () => {
+      try {
+        setLoading(true);
+        const poolsData = await getAllPools();
+        setPools(poolsData);
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách hồ bơi:', error);
+        message.error('Không thể tải danh sách hồ bơi');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Validate the parameters and set suggestions (đã loại bỏ warnings)
+    fetchPools();
+  }, []);
+
+  // Đánh giá các thông số và đưa ra gợi ý
   useEffect(() => {
     const newSuggestions: ChemicalSuggestion[] = [];
     
@@ -99,8 +142,10 @@ const WaterParameters: React.FC = () => {
       }
     }
     
+    // Bỏ phần gợi ý về nhiệt độ
+    
     setSuggestions(newSuggestions);
-  }, [formData.pH, formData.chlorine]);
+  }, [formData.pH, formData.chlorine, formData.temperature]);
 
   const handleInputChange = (
     field: keyof WaterParameterFormData,
@@ -150,25 +195,82 @@ const WaterParameters: React.FC = () => {
     handleInputChange('notes', notes);
   };
 
-  const handleSubmit = () => {
-    setSubmitting(true);
-    
-    // Validate required fields
-    if (!formData.poolId || !formData.timestamp || 
-        formData.pH === null || formData.chlorine === null || formData.temperature === null) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
-      setSubmitting(false);
-      return;
+  // Tính toán trạng thái dựa trên các giá trị đo lường
+  const calculateStatus = (): MeasurementStatus => {
+    if (formData.pH === null || formData.chlorine === null) {
+      return 'normal';
     }
     
-    // In a real app, would submit to API here
-    console.log('Submitting data:', formData);
+    // Kiểm tra từng điều kiện để xác định trạng thái, không xét nhiệt độ
+    const isPHNormal = formData.pH >= PH_MIN && formData.pH <= PH_MAX;
+    const isChlorineNormal = formData.chlorine >= CHLORINE_MIN && formData.chlorine <= CHLORINE_MAX;
     
-    // Simulate API call
-    setTimeout(() => {
+    if (isPHNormal && isChlorineNormal) {
+      return 'normal';
+    } else {
+      // Nếu có bất kỳ thông số nào vượt khỏi ngưỡng quá nhiều, coi là critical
+      const isPHCritical = formData.pH < PH_MIN - 1 || formData.pH > PH_MAX + 1;
+      const isChlorineCritical = formData.chlorine < CHLORINE_MIN - 0.3 || formData.chlorine > CHLORINE_MAX + 1;
+      
+      if (isPHCritical || isChlorineCritical) {
+        return 'critical';
+      }
+      
+      // Các trường hợp còn lại là warning
+      return 'warning';
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Validate required fields
+      if (!formData.poolId || !formData.timestamp || 
+          formData.pH === null || formData.chlorine === null || formData.temperature === null) {
+        message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Tìm thông tin hồ bơi từ danh sách
+      const selectedPool = pools.find(pool => pool.poolsId.toString() === formData.poolId);
+      
+      if (!selectedPool) {
+        message.error('Không tìm thấy thông tin hồ bơi');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Tính toán trạng thái dựa trên các giá trị đo lường
+      const status = calculateStatus();
+      
+      // Lấy staffId từ context user hoặc từ localStorage nếu context không có
+      // Cách 1: Nếu user từ context đã có staffId
+      const staffId = user?.staffId || getCurrentUser()?.staffId;
+      
+      // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
+      const waterQualityData: WaterQualitySubmitData = {
+        poolId: parseInt(formData.poolId),
+        poolName: selectedPool.poolName,
+        pTimestamp: formData.timestamp as Date,
+        temperatureC: formData.temperature as number,
+        pHLevel: formData.pH as number,
+        chlorineMgPerL: formData.chlorine as number,
+        notes: formData.notes,
+        createdById: staffId // Sử dụng staffId đã lấy ở trên
+      };
+      
+      console.log('Submitting data:', waterQualityData);
+      
+      // Gọi API để lưu dữ liệu vào database
+      await addWaterQualityParameter(waterQualityData);
+      
       setSubmitting(false);
       setSubmitted(true);
-      // Reset form after successful submission
+      message.success('Đã lưu thông số nước thành công!');
+      
+      // Đợi một chút rồi reset form và redirect
       setTimeout(() => {
         setSubmitted(false);
         setFormData({
@@ -180,8 +282,15 @@ const WaterParameters: React.FC = () => {
           notes: '',
         });
         setSuggestions([]);
-      }, 3000);
-    }, 1000);
+        
+        // Chuyển hướng đến trang lịch sử đo
+        navigate('/water-quality/history');
+      }, 2000);
+    } catch (error) {
+      console.error('Lỗi khi lưu dữ liệu:', error);
+      message.error('Có lỗi xảy ra khi lưu dữ liệu');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -191,14 +300,12 @@ const WaterParameters: React.FC = () => {
       {submitted && (
         <Alert 
           message="Thành công" 
-          description="Dữ liệu đã được lưu thành công!" 
+          description="Dữ liệu đã được lưu thành công! Đang chuyển đến trang lịch sử..." 
           type="success" 
           showIcon 
           className="mb-4"
         />
       )}
-      
-      {/* Đã loại bỏ phần cảnh báo ở đây */}
       
       <Card title="Thông tin đo lường" className="mb-6">
         <Form layout="vertical">
@@ -209,9 +316,13 @@ const WaterParameters: React.FC = () => {
                 value={formData.poolId || undefined}
                 onChange={(value: string) => handleInputChange('poolId', value)}
                 className="w-full"
+                loading={loading}
+                disabled={loading || submitting}
               >
                 {pools.map(pool => (
-                  <Option key={pool.id} value={pool.id}>{pool.name}</Option>
+                  <Option key={pool.poolsId.toString()} value={pool.poolsId.toString()}>
+                    {pool.poolName}
+                  </Option>
                 ))}
               </Select>
             </Form.Item>
@@ -224,6 +335,7 @@ const WaterParameters: React.FC = () => {
                 placeholder="Chọn ngày và giờ"
                 value={formData.timestamp ? moment(formData.timestamp) : null}
                 onChange={handleTimestampChange}
+                disabled={submitting}
               />
             </Form.Item>
             
@@ -239,6 +351,7 @@ const WaterParameters: React.FC = () => {
                 placeholder="Ví dụ: 28.5"
                 value={formData.temperature === null ? '' : formData.temperature}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNumberChange('temperature', e.target.value)}
+                disabled={submitting}
               />
             </Form.Item>
             
@@ -259,6 +372,7 @@ const WaterParameters: React.FC = () => {
                 placeholder="Ví dụ: 7.2"
                 value={formData.pH === null ? '' : formData.pH}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNumberChange('pH', e.target.value)}
+                disabled={submitting}
               />
             </Form.Item>
             
@@ -280,10 +394,11 @@ const WaterParameters: React.FC = () => {
                 placeholder="Ví dụ: 1.5"
                 value={formData.chlorine === null ? '' : formData.chlorine}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNumberChange('chlorine', e.target.value)}
+                disabled={submitting}
               />
             </Form.Item>
             
-            {/* Hiển thị gợi ý hóa chất khi cả pH và chlorine đã được nhập */}
+            {/* Hiển thị gợi ý hóa chất khi có nhập dữ liệu */}
             {(formData.pH !== null || formData.chlorine !== null) && (
               <div className="md:col-span-2 mb-4">
                 <Card 
@@ -322,6 +437,7 @@ const WaterParameters: React.FC = () => {
                         ghost 
                         onClick={addChemicalAdjustmentNotes}
                         className="mt-2"
+                        disabled={submitting}
                       >
                         Thêm gợi ý vào ghi chú
                       </Button>
@@ -339,6 +455,7 @@ const WaterParameters: React.FC = () => {
                 placeholder="Nhập ghi chú nếu có"
                 value={formData.notes}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('notes', e.target.value)}
+                disabled={submitting}
               />
             </Form.Item>
           </div>
@@ -349,6 +466,7 @@ const WaterParameters: React.FC = () => {
               onClick={handleSubmit} 
               loading={submitting}
               size="large"
+              disabled={loading || submitted}
             >
               Lưu dữ liệu
             </Button>

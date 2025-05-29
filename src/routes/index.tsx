@@ -48,6 +48,8 @@ const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: 
 
 const AppRoutes: React.FC = () => {
   const { user, login, isAdmin } = useAuth();
+
+  
   
   // Logging để debug
   useEffect(() => {

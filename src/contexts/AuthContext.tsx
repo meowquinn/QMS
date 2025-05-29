@@ -1,71 +1,78 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
 // Định nghĩa kiểu dữ liệu User
-interface User {
+export interface User {
+  staffId: number;
   username: string;
-  name: string;
-  role: string;
-  access: 'admin' | 'user';
+  fullName: string;
+  sRole: string;
+  access: string;
+  email: string;
+  phoneNumber: string;
+  sAddress?: string;
 }
 
-// Định nghĩa interface cho AuthContext
 interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
+  isAuthenticated: boolean;
   isAdmin: boolean;
 }
 
-// Create context với giá trị mặc định
+// Tạo context
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
   logout: () => {},
+  isAuthenticated: false,
   isAdmin: false
 });
 
-// Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const isAdmin = user?.access === 'admin';
+  const isAuthenticated = user !== null;
+  const isAdmin = user?.sRole === 'Admin' || user?.access === 'admin';
 
-  // Kiểm tra người dùng đã đăng nhập từ session storage khi component mount
+  // Kiểm tra người dùng đã đăng nhập
   useEffect(() => {
-    const userFromStorage = sessionStorage.getItem('user');
-    if (userFromStorage) {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       try {
-        const parsedUser = JSON.parse(userFromStorage) as User;
-        setUser(parsedUser);
-        console.log("User restored from storage:", parsedUser);
+        const userData = JSON.parse(storedUser) as User;
+        setUser(userData);
       } catch (error) {
-        console.error("Failed to parse user from storage:", error);
-        sessionStorage.removeItem('user');
+        console.error('Failed to parse user data:', error);
+        localStorage.removeItem('user');
       }
     }
   }, []);
 
   // Hàm login
   const login = (userData: User) => {
-    sessionStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     console.log("User logged in:", userData);
   };
 
   // Hàm logout
   const logout = () => {
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
     console.log("User logged out");
+    
+    // Redirect về trang đăng nhập
+    window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook để sử dụng context
 export const useAuth = () => useContext(AuthContext);
 
 export default AuthContext;

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
+import { login as loginApi } from '../../services/authService';
+import { type User } from '../../contexts/AuthContext';
 
 
 interface LoginProps {
-  onLogin: (userData: unknown) => void;
+  onLogin: (userData: User) => void;
 }
 
 interface LoginFormValues {
@@ -17,51 +19,42 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const onFinish = (values: LoginFormValues) => {
-    setLoading(true);
-    
-    // Giả lập API call
-    setTimeout(() => {
-      // Thông tin đăng nhập mẫu
-      const users = [
-        {
-          id: 'staff-001',
-          username: 'admin',
-          password: 'admin123',
-          name: 'Quản trị viên',
-          role: 'Quản lý hệ thống',
-          access: 'admin'
-        },
-        {
-          id: 'staff-002',
-          username: 'staff',
-          password: 'staff123',
-          name: 'Nhân viên',
-          role: 'Nhân viên đo đạc',
-          access: 'user'
-        }
-      ];
+  const onFinish = async (values: LoginFormValues) => {
+    try {
+      setLoading(true);
       
-      const user = users.find(
-        u => u.username === values.username && u.password === values.password
-      );
+      // Gọi API đăng nhập
+      const response = await loginApi(values.username, values.password);
       
-      if (user) {
+      // Nếu đăng nhập thành công
+      if (response.success) {
         message.success('Đăng nhập thành công!');
-        // Truyền thông tin người dùng lên component cha, bao gồm ID
-        onLogin({
-          id: user.id,         // Thêm ID
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          access: user.access
-        });
+        
+        // Chuyển đổi dữ liệu từ API sang đúng kiểu User
+        const userData: User = {
+          staffId: response.data.staffId,
+          username: response.data.username,
+          fullName: response.data.fullName,
+          sRole: response.data.sRole,
+          access: response.data.access,
+          email: response.data.email,
+          phoneNumber: response.data.phoneNumber,
+          sAddress: response.data.sAddress
+        };
+        
+        // Gọi hàm onLogin với dữ liệu đã chuyển đổi
+        onLogin(userData);
       } else {
-        message.error('Tên đăng nhập hoặc mật khẩu không đúng!');
+        // Xử lý lỗi đăng nhập
+        message.error(response.message || 'Tên đăng nhập hoặc mật khẩu không đúng!');
       }
-      
+    } catch (error) {
+      // Xử lý lỗi khi gọi API
+      console.error('Lỗi đăng nhập:', error);
+      message.error('Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -87,6 +80,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             onFinish={onFinish}
             layout="vertical"
             size="large"
+            initialValues={{
+              username: process.env.NODE_ENV === 'development' ? 'admin' : '',
+              password: process.env.NODE_ENV === 'development' ? 'admin123' : '',
+            }}
           >
             <Form.Item
               name="username"
@@ -95,6 +92,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <Input 
                 prefix={<UserOutlined className="text-gray-400" />} 
                 placeholder="Tên đăng nhập"
+                disabled={loading}
               />
             </Form.Item>
 
@@ -105,6 +103,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <Input.Password 
                 prefix={<LockOutlined className="text-gray-400" />} 
                 placeholder="Mật khẩu"
+                disabled={loading}
               />
             </Form.Item>
 
@@ -120,19 +119,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </Button>
             </Form.Item>
 
-            {/* Thông tin mẫu */}
+            {/* Thông tin trợ giúp */}
             <div className="bg-blue-50 p-3 rounded-md mt-4">
-              <p className="text-sm text-blue-800 font-medium">Thông tin đăng nhập mẫu:</p>
+              <p className="text-sm text-blue-800 font-medium">Thông tin đăng nhập</p>
               <p className="text-xs text-blue-700 mt-1">
-                - Quản trị viên: <b>admin / admin123</b>
+                Sử dụng tài khoản được cung cấp bởi quản trị viên hệ thống.
               </p>
-              <p className="text-xs text-blue-700">
-                - Nhân viên: <b>staff / staff123</b>
+              <p className="text-xs text-blue-700 mt-1">
+                Nếu quên mật khẩu, vui lòng liên hệ với quản trị viên để được hỗ trợ.
               </p>
+              
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 pt-2 border-t border-blue-100">
+                  <p className="text-xs text-blue-800 font-medium">Tài khoản mẫu:</p>
+                  <div className="grid grid-cols-2 gap-1 mt-1 text-xs text-blue-700">
+                    <div>Admin:</div>
+                    <div>admin / admin123</div>
+                    <div>Nhân viên:</div>
+                    <div>staff / staff123</div>
+                  </div>
+                </div>
+              )}
             </div>
           </Form>
           
           {/* Footer */}
+          <div className="mt-6 text-center text-sm text-gray-500">
+            <p>© {new Date().getFullYear()} PoolQMS. Bản quyền thuộc về công ty.</p>
+          </div>
         </div>
       </motion.div>
     </div>

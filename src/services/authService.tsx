@@ -1,85 +1,98 @@
 // src/services/authService.ts
 import axios from 'axios';
+import { type User } from '../contexts/AuthContext';
 
-// URL của API backend - giữ lại để sử dụng trong service này
-const API_URL = 'https://localhost:7021/api';
-
-// Interface cho dữ liệu đăng nhập trả về
-interface LoginResponse {
-  staffId: number;  // Đổi từ id sang staffId theo SQL
-  username: string;
-  fullName: string;  // Đổi từ name sang fullName
-  sRole: string;     // Đổi từ role sang sRole
-  access: string;
-  token: string;
-  email: string;     // Thêm field email
-  phoneNumber: string; // Thêm field phoneNumber
-  sAddress?: string;   // Thêm field sAddress, optional
+// Định nghĩa kiểu dữ liệu trả về từ API đăng nhập
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  data: {
+    staffId: number;
+    username: string;
+    fullName: string;
+    sRole: string;
+    access: string;
+    email: string;
+    phoneNumber: string;
+    sAddress?: string;
+    token?: string;
+  };
 }
 
-// Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
+// Lấy API URL từ biến môi trường
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, 
-      { 
-        username, 
-        sPassword: password // Đổi từ password sang sPassword
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // Gọi API đăng nhập
+    const response = await axios.post(`${API_URL}/auth/login`, { username, password });
     
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify({
-      staffId: response.data.staffId,         // Cập nhật theo đúng tên trường
-      username: response.data.username,
-      fullName: response.data.fullName,       // Cập nhật theo đúng tên trường
-      sRole: response.data.sRole,             // Cập nhật theo đúng tên trường
-      access: response.data.access,
-      email: response.data.email,             // Thêm email
-      phoneNumber: response.data.phoneNumber, // Thêm phoneNumber
-      sAddress: response.data.sAddress        // Thêm sAddress
-    }));
+    // Lưu token nếu có
+    if (response.data.success && response.data.data.token) {
+      localStorage.setItem('token', response.data.data.token);
+    }
+    
+    // Lưu thông tin người dùng vào localStorage
+    if (response.data.success) {
+      localStorage.setItem('user', JSON.stringify({
+        staffId: response.data.data.staffId,
+        username: response.data.data.username,
+        fullName: response.data.data.fullName,
+        sRole: response.data.data.sRole,
+        access: response.data.data.access,
+        email: response.data.data.email,
+        phoneNumber: response.data.data.phoneNumber,
+        sAddress: response.data.data.sAddress
+      }));
+    }
     
     return response.data;
   } catch (error) {
-    console.error('Lỗi đăng nhập:', error);
-    throw new Error('Đăng nhập thất bại. Vui lòng kiểm tra tên đăng nhập và mật khẩu.');
+    // Xử lý lỗi mạng hoặc lỗi server
+    if (axios.isAxiosError(error) && error.response) {
+      return error.response.data as LoginResponse;
+    }
+    
+    // Trả về lỗi generic nếu không phải lỗi API
+    return {
+      success: false,
+      message: 'Không thể kết nối đến máy chủ',
+      data: {
+        staffId: 0,
+        username: '',
+        fullName: '',
+        sRole: '',
+        access: '',
+        email: '',
+        phoneNumber: '',
+        sAddress: '',
+        token: ''
+      }
+    };
   }
 };
 
-// Các hàm khác giữ nguyên
-export const logout = (): void => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-};
-
-export const isAuthenticated = (): boolean => {
-  return localStorage.getItem('token') !== null;
-};
-
-// Cập nhật interface cho user từ localStorage
-interface User {
-  staffId: number;
-  username: string;
-  fullName: string;
-  sRole: string;
-  access: string;
-  email: string;
-  phoneNumber: string;
-  sAddress?: string;
-}
-
+// Lấy thông tin người dùng hiện tại từ localStorage
 export const getCurrentUser = (): User | null => {
   const userStr = localStorage.getItem('user');
   if (!userStr) return null;
   
   try {
-    return JSON.parse(userStr);
-  } catch {
+    return JSON.parse(userStr) as User;
+  } catch (error) {
+    console.error('Failed to parse user data:', error);
     return null;
   }
+};
+
+// Lấy token hiện tại
+export const getToken = (): string | null => {
+  return localStorage.getItem('token');
+};
+
+// Đăng xuất
+export const logout = (): void => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  window.location.href = '/login';
 };
