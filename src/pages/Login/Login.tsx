@@ -32,10 +32,10 @@ const Login: React.FC = () => {
       setLoading(true);
       const API_URL = getApiUrl();
       
-      console.log('Sending login request to:', `${API_URL}/api/Auth/login`);
+      console.log('Sending login request to:', `${API_URL}/api/auth/login`);
       
       // Đơn giản hóa quá trình login theo mẫu đã cho
-      const response = await axios.post(`${API_URL}/api/Auth/login`, { 
+      const response = await axios.post(`${API_URL}/api/auth/login`, { 
         username: values.username, 
         password: values.password 
       });
