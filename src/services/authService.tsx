@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { type User } from '../contexts/AuthContext';
 
-// Định nghĩa kiểu dữ liệu trả về từ API đăng nhập
+// Định nghĩa interface cho phản hồi đăng nhập
 export interface LoginResponse {
   success: boolean;
   message: string;
@@ -19,44 +19,43 @@ export interface LoginResponse {
   };
 }
 
-// Lấy API URL từ biến môi trường
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// URL API
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+/**
+ * Gọi API đăng nhập
+ * @param username Tên đăng nhập
+ * @param password Mật khẩu
+ * @returns Promise với kết quả đăng nhập
+ */
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
     // Gọi API đăng nhập
-    const response = await axios.post(`${API_URL}/auth/login`, { username, password });
+    const response = await axios.post<LoginResponse>(`${API_URL}/api/Auth/login`, { username, password });
     
-    // Lưu token nếu có
+    console.log('Login API response:', response.data);
+    
+    // Xử lý và lưu thông tin khi đăng nhập thành công
     if (response.data.success && response.data.data.token) {
       localStorage.setItem('token', response.data.data.token);
-    }
-    
-    // Lưu thông tin người dùng vào localStorage
-    if (response.data.success) {
-      localStorage.setItem('user', JSON.stringify({
-        staffId: response.data.data.staffId,
-        username: response.data.data.username,
-        fullName: response.data.data.fullName,
-        sRole: response.data.data.sRole,
-        access: response.data.data.access,
-        email: response.data.data.email,
-        phoneNumber: response.data.data.phoneNumber,
-        sAddress: response.data.data.sAddress
-      }));
+      
+      // Cấu hình axios để gửi token trong header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
     }
     
     return response.data;
   } catch (error) {
-    // Xử lý lỗi mạng hoặc lỗi server
+    console.error('Login error:', error);
+    
+    // Xử lý lỗi từ API
     if (axios.isAxiosError(error) && error.response) {
       return error.response.data as LoginResponse;
     }
     
-    // Trả về lỗi generic nếu không phải lỗi API
+    // Trả về lỗi nếu không connect được đến server
     return {
       success: false,
-      message: 'Không thể kết nối đến máy chủ',
+      message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau.',
       data: {
         staffId: 0,
         username: '',
@@ -72,27 +71,39 @@ export const login = async (username: string, password: string): Promise<LoginRe
   }
 };
 
-// Lấy thông tin người dùng hiện tại từ localStorage
+/**
+ * Lấy thông tin người dùng hiện tại từ localStorage
+ * @returns Thông tin user hoặc null nếu chưa đăng nhập
+ */
 export const getCurrentUser = (): User | null => {
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
-  
   try {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
     return JSON.parse(userStr) as User;
   } catch (error) {
-    console.error('Failed to parse user data:', error);
+    console.error('Error parsing user data:', error);
     return null;
   }
 };
 
-// Lấy token hiện tại
+/**
+ * Lấy token JWT hiện tại
+ * @returns Token hoặc null nếu chưa đăng nhập
+ */
 export const getToken = (): string | null => {
   return localStorage.getItem('token');
 };
 
-// Đăng xuất
+/**
+ * Đăng xuất người dùng
+ */
 export const logout = (): void => {
   localStorage.removeItem('user');
   localStorage.removeItem('token');
+  
+  // Xóa Authorization header
+  delete axios.defaults.headers.common['Authorization'];
+  
+  // Chuyển hướng về trang login
   window.location.href = '/login';
 };
