@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography, message } from 'antd';
+import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography, message, Switch } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import type { Moment } from 'moment';
 import moment from 'moment';
@@ -11,7 +11,6 @@ import type { Pool } from '../../services/types';
 
 // Import User interface từ authService để TypeScript nhận diện đúng kiểu dữ liệu
 import { getCurrentUser } from '../../services/authService';
-// Hoặc có thể import interface User từ authService nếu đã export
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -21,7 +20,6 @@ const PH_MIN = 7.0;
 const PH_MAX = 7.6;
 const CHLORINE_MIN = 0.5; // mg/L 
 const CHLORINE_MAX = 3.0; // mg/L 
-
 
 // Định nghĩa trạng thái đo
 type MeasurementStatus = 'normal' | 'warning' | 'critical';
@@ -33,7 +31,7 @@ interface ChemicalSuggestion {
   recommendation: string;
 }
 
-// Cập nhật interface form data để phù hợp hơn với WaterQualityRecord
+// Cập nhật interface form data để phù hợp với bảng WaterQualityParameters
 interface WaterParameterFormData {
   poolId: string;
   timestamp: Date | null;
@@ -41,9 +39,11 @@ interface WaterParameterFormData {
   pH: number | null;
   chlorine: number | null;
   notes: string;
+  resolved: boolean;
+  needsAction: boolean;
 }
 
-// Interface dữ liệu gửi đến API
+// Interface dữ liệu gửi đến API theo cấu trúc bảng mới
 interface WaterQualitySubmitData {
   poolId: number;
   poolName: string;
@@ -52,7 +52,10 @@ interface WaterQualitySubmitData {
   pHLevel: number;
   chlorineMgPerL: number;
   notes: string;
-  createdById?: number;
+  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  rStatus: string;
+  resolved: boolean;
+  needsAction: boolean;
 }
 
 const WaterParameters: React.FC = () => {
@@ -66,6 +69,8 @@ const WaterParameters: React.FC = () => {
     pH: null,
     chlorine: null,
     notes: '',
+    resolved: false, // Mặc định là false theo yêu cầu mới
+    needsAction: true, // Mặc định là true theo yêu cầu mới
   });
   
   const [suggestions, setSuggestions] = useState<ChemicalSuggestion[]>([]);
@@ -75,6 +80,7 @@ const WaterParameters: React.FC = () => {
   // Thêm state cho danh sách hồ bơi và loading
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(true);
+  const [measurementStatus, setMeasurementStatus] = useState<MeasurementStatus>('normal');
 
   // Fetch danh sách hồ bơi từ API
   useEffect(() => {
@@ -142,14 +148,26 @@ const WaterParameters: React.FC = () => {
       }
     }
     
-    // Bỏ phần gợi ý về nhiệt độ
-    
     setSuggestions(newSuggestions);
-  }, [formData.pH, formData.chlorine, formData.temperature]);
+    
+    // Cập nhật trạng thái đo và needsAction tự động
+    if (formData.pH !== null && formData.chlorine !== null) {
+      const status = calculateStatus();
+      setMeasurementStatus(status);
+      
+      // Nếu trạng thái là warning hoặc critical thì needsAction = true
+      if (status !== 'normal') {
+        setFormData(prev => ({
+          ...prev,
+          needsAction: true
+        }));
+      }
+    }
+  }, [formData.pH, formData.chlorine]);
 
   const handleInputChange = (
     field: keyof WaterParameterFormData,
-    value: string | number | Date | null
+    value: string | number | Date | null | boolean
   ) => {
     setFormData({
       ...formData,
@@ -221,6 +239,20 @@ const WaterParameters: React.FC = () => {
     }
   };
 
+  // Chuyển đổi status sang string để lưu vào database
+  const getStatusString = (status: MeasurementStatus): string => {
+    switch (status) {
+      case 'normal':
+        return 'Normal';
+      case 'warning':
+        return 'Warning';
+      case 'critical':
+        return 'Critical';
+      default:
+        return 'Normal';
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
@@ -244,10 +276,11 @@ const WaterParameters: React.FC = () => {
       
       // Tính toán trạng thái dựa trên các giá trị đo lường
       const status = calculateStatus();
+      const statusString = getStatusString(status);
       
-      // Lấy staffId từ context user hoặc từ localStorage nếu context không có
-      // Cách 1: Nếu user từ context đã có staffId
-      const staffId = user?.staffId || getCurrentUser()?.staffId;
+      // Lấy thông tin người tạo
+      const currentUser = user || getCurrentUser();
+      const createdBy = currentUser?.fullName || currentUser?.username || 'Unknown';
       
       // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
       const waterQualityData: WaterQualitySubmitData = {
@@ -258,7 +291,10 @@ const WaterParameters: React.FC = () => {
         pHLevel: formData.pH as number,
         chlorineMgPerL: formData.chlorine as number,
         notes: formData.notes,
-        createdById: staffId // Sử dụng staffId đã lấy ở trên
+        createdBy: createdBy, // Thay đổi từ createdById sang createdBy và sử dụng tên người dùng
+        rStatus: statusString, // Trạng thái được chuyển đổi thành chuỗi
+        resolved: formData.resolved,
+        needsAction: formData.needsAction
       };
       
       console.log('Submitting data:', waterQualityData);
@@ -280,11 +316,13 @@ const WaterParameters: React.FC = () => {
           pH: null,
           chlorine: null,
           notes: '',
+          resolved: false,
+          needsAction: true,
         });
         setSuggestions([]);
         
         // Chuyển hướng đến trang lịch sử đo
-        navigate('/water-quality/history');
+        navigate('/quality/records');
       }, 2000);
     } catch (error) {
       console.error('Lỗi khi lưu dữ liệu:', error);
@@ -396,6 +434,43 @@ const WaterParameters: React.FC = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNumberChange('chlorine', e.target.value)}
                 disabled={submitting}
               />
+            </Form.Item>
+            
+            {/* Hiển thị trạng thái và thêm các trường mới */}
+            <Form.Item label="Trạng thái">
+              <div className={`p-2 rounded-md ${
+                measurementStatus === 'normal' 
+                  ? 'bg-green-100 text-green-800' 
+                  : measurementStatus === 'warning'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-red-100 text-red-800'
+              }`}>
+                {measurementStatus === 'normal' && "Bình thường"}
+                {measurementStatus === 'warning' && "Cảnh báo"}
+                {measurementStatus === 'critical' && "Nguy hiểm"}
+              </div>
+            </Form.Item>
+            
+            <Form.Item label="Cần xử lý">
+              <Switch
+                checked={formData.needsAction}
+                onChange={(checked) => handleInputChange('needsAction', checked)}
+                disabled={submitting || measurementStatus !== 'normal'} // Disable nếu trạng thái không phải normal
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {formData.needsAction ? 'Cần xử lý' : 'Không cần xử lý'}
+              </span>
+            </Form.Item>
+            
+            <Form.Item label="Đã giải quyết">
+              <Switch
+                checked={formData.resolved}
+                onChange={(checked) => handleInputChange('resolved', checked)}
+                disabled={submitting}
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {formData.resolved ? 'Đã giải quyết' : 'Chưa giải quyết'}
+              </span>
             </Form.Item>
             
             {/* Hiển thị gợi ý hóa chất khi có nhập dữ liệu */}
