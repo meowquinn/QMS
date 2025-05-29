@@ -2,17 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { VscChevronRight, VscChevronDown } from "react-icons/vsc";
 import { FiLogOut, FiUser } from "react-icons/fi";
-import { Tooltip } from 'antd';
 import sidebarMenu from '../../../data/sidebarData';
-import { useAuth } from '../../../contexts/AuthContext';
 
 interface SidebarProps {
-  isCollapsed?: boolean;
-  isMobile?: boolean; 
+  onToggle?: (collapsed: boolean) => void;
+  isMobile?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
-  onToggle?: (collapsed: boolean) => void;
-  user?: { name: string; role: string };
+  // Thêm prop user để nhận thông tin người dùng
+  user?: {
+    name: string;
+    role: string;
+    avatar?: string;
+  };
   onLogout?: () => void;
 }
 
@@ -20,20 +22,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggle, 
   isMobile, 
   isOpen, 
-  onClose,
+  onClose, 
+  user = { name: "Admin", role: "Quản trị viên", avatar: undefined }, // Giá trị mặc định nếu không truyền user
   onLogout 
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout: authLogout } = useAuth();
-  
-  // Fallback user nếu không có thông tin từ context
-  const userData = user || { 
-    fullName: "Chưa đăng nhập", 
-    sRole: "Không có quyền",
-    email: "",
-    phoneNumber: ""
-  };
   
   // State để quản lý trạng thái đóng/mở của menu con
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
@@ -136,14 +130,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Hàm xử lý đăng xuất
   const handleLogout = () => {
+    // Gọi hàm callback nếu được truyền vào
     if (onLogout) {
       onLogout();
-    } else if (authLogout) {
-      authLogout();
     } else {
-      // Fallback: xóa dữ liệu localStorage và chuyển đến trang đăng nhập
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+      // Mặc định: điều hướng đến trang đăng nhập
       navigate('/login');
     }
   };
@@ -301,24 +292,28 @@ const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
         
-        {/* Footer của sidebar - cập nhật để hiển thị thông tin từ API */}
+        {/* Footer của sidebar - cố định ở dưới */}
         <div className={`border-t border-gray-200 flex-shrink-0 ${isCollapsed && !isMobile ? 'py-3' : 'p-3'}`}>
           {(!isCollapsed || isMobile) ? (
             <div>
-              {/* Thông tin người dùng - sử dụng dữ liệu từ API */}
+              {/* Thông tin người dùng */}
               <div className="flex items-center mb-2 p-2 rounded-lg bg-gray-50">
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <FiUser className="h-4 w-4 text-blue-500" />
-                  </div>
+                  {user.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={user.name}
+                      className="h-8 w-8 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FiUser className="h-4 w-4 text-blue-500" />
+                    </div>
+                  )}
                 </div>
                 <div className="ml-3 flex-1 min-w-0">
-                  <Tooltip title={userData.email || "Không có email"}>
-                    <p className="text-xs font-medium text-gray-700 truncate">{userData.fullName}</p>
-                  </Tooltip>
-                  <Tooltip title={userData.phoneNumber || "Không có số điện thoại"}>
-                    <p className="text-xs text-gray-500 truncate">{userData.sRole}</p>
-                  </Tooltip>
+                  <p className="text-xs font-medium text-gray-700 truncate">{user.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user.role}</p>
                 </div>
                 <button 
                   onClick={handleLogout}
@@ -330,18 +325,27 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
               
               {/* Phiên bản */}
-              <p className="text-xs text-center text-gray-500">PoolQMS v1.0</p>
+              <p className="text-xs text-center text-gray-500">AquaMonitor v1.0</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center">
               {/* Icon user khi sidebar thu gọn */}
-              <Tooltip title={userData.fullName}>
-                <div className="mb-2 cursor-pointer rounded-full p-2 hover:bg-gray-100">
+              <div 
+                className="mb-2 cursor-pointer rounded-full p-2 hover:bg-gray-100"
+                title={user.name}
+              >
+                {user.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name}
+                    className="h-8 w-8 rounded-full"
+                  />
+                ) : (
                   <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                     <FiUser className="h-4 w-4 text-blue-500" />
                   </div>
-                </div>
-              </Tooltip>
+                )}
+              </div>
               
               {/* Nút đăng xuất khi sidebar thu gọn */}
               <button 
