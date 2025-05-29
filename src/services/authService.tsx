@@ -5,20 +5,16 @@ import axios from 'axios';
 const API_URL = 'https://localhost:7021/api';
 
 // Interface cho dữ liệu đăng nhập trả về
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  data: {
-    staffId: number;
-    username: string;
-    fullName: string;
-    sRole: string;
-    access: string;
-    email: string;
-    phoneNumber: string;
-    sAddress?: string;
-    token?: string;
-  };
+interface LoginResponse {
+  staffId: number;  // Đổi từ id sang staffId theo SQL
+  username: string;
+  fullName: string;  // Đổi từ name sang fullName
+  sRole: string;     // Đổi từ role sang sRole
+  access: string;
+  token: string;
+  email: string;     // Thêm field email
+  phoneNumber: string; // Thêm field phoneNumber
+  sAddress?: string;   // Thêm field sAddress, optional
 }
 
 // Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
@@ -36,16 +32,16 @@ export const login = async (username: string, password: string): Promise<LoginRe
       }
     );
     
-    localStorage.setItem('token', response.data.data.token ?? '');
+    localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify({
-      staffId: response.data.data.staffId,         // Cập nhật theo đúng tên trường
-      username: response.data.data.username,
-      fullName: response.data.data.fullName,       // Cập nhật theo đúng tên trường
-      sRole: response.data.data.sRole,             // Cập nhật theo đúng tên trường
-      access: response.data.data.access,
-      email: response.data.data.email,             // Thêm email
-      phoneNumber: response.data.data.phoneNumber, // Thêm phoneNumber
-      sAddress: response.data.data.sAddress        // Thêm sAddress
+      staffId: response.data.staffId,         // Cập nhật theo đúng tên trường
+      username: response.data.username,
+      fullName: response.data.fullName,       // Cập nhật theo đúng tên trường
+      sRole: response.data.sRole,             // Cập nhật theo đúng tên trường
+      access: response.data.access,
+      email: response.data.email,             // Thêm email
+      phoneNumber: response.data.phoneNumber, // Thêm phoneNumber
+      sAddress: response.data.sAddress        // Thêm sAddress
     }));
     
     return response.data;

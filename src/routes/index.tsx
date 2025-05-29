@@ -47,8 +47,10 @@ const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: 
 };
 
 const AppRoutes: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, login, isAdmin } = useAuth();
 
+  
+  
   // Logging để debug
   useEffect(() => {
     console.log('Current user:', user);
@@ -61,9 +63,9 @@ const AppRoutes: React.FC = () => {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={
-            user ? <Navigate to="/dashboard" replace /> : <Login />
+            user ? <Navigate to="/dashboard" replace /> : <Login onLogin={login} />
           } />
-
+          
           <Route path="/" element={<Navigate to="/login" replace />} />
           
           {/* Protected Routes trong MainLayout */}

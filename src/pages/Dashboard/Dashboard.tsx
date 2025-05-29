@@ -1,16 +1,7 @@
-import React, { useEffect } from 'react';
-import { Card, Row, Col, Statistic } from 'antd';
+import React from 'react';
 import { FaExclamationTriangle, FaCheckCircle, FaWater, FaFlask } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
-  
-  // Log để debug
-  useEffect(() => {
-    console.log('Dashboard rendered, user:', user);
-  }, [user]);
-
   // Sample data
   const poolStats = {
     total: 5,
@@ -32,36 +23,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Xin chào, {user?.fullName || 'Người dùng'}!
-      </h1>
-      
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={8}>
-          <Card>
-            <Statistic title="Hồ bơi" value={poolStats.total} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card>
-            <Statistic title="Nhân viên" value={10} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card>
-            <Statistic title="Kiểm định chất lượng" value={120} />
-          </Card>
-        </Col>
-      </Row>
-
-      <h2 className="text-xl font-semibold mt-8 mb-4">Trạng thái hệ thống</h2>
-
-      <Card title="Thông tin nhanh">
-        <p>
-          Đây là phiên bản 1.0 của Hệ thống Quản lý Chất lượng Hồ bơi (Pool QMS). 
-          Hệ thống này giúp quản lý chất lượng nước và các hoạt động bảo trì hồ bơi.
-        </p>
-      </Card>
+      <h1 className="text-2xl font-bold text-gray-800">Tổng quan</h1>
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
