@@ -1,48 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
-import { login as loginApi } from '../../services/authService';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
+// Thêm hàm getApiUrl trực tiếp vào file này
+const getApiUrl = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:7021';
+  }
+  return 'https://api.yourproductionurl.com'; // Thay thế bằng API URL thực tế
+};
 
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Nếu đã đăng nhập, chuyển hướng đến dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const onFinish = async (values: { username: string; password: string }) => {
     try {
       setLoading(true);
+      const API_URL = getApiUrl();
       
-      // Gọi API đăng nhập từ service
-      const response = await loginApi(values.username, values.password);
+      console.log('Sending login request to:', `${API_URL}/api/Auth/login`);
       
-      if (response.success) {
+      // Đơn giản hóa quá trình login theo mẫu đã cho
+      const response = await axios.post(`${API_URL}/api/Auth/login`, { 
+        username: values.username, 
+        password: values.password 
+      });
+      
+      console.log('Login response:', response);
+      
+      if (response.status === 200 && response.data.success) {
         message.success('Đăng nhập thành công!');
         
-        // Cập nhật context
-        login({
-          staffId: response.data.staffId,
-          username: response.data.username,
-          fullName: response.data.fullName,
-          sRole: response.data.sRole,
-          access: response.data.access,
-          email: response.data.email,
-          phoneNumber: response.data.phoneNumber,
-          sAddress: response.data.sAddress
-        });
+        // Lưu token
+        if (response.data.data.token) {
+          localStorage.setItem('token', response.data.data.token);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
+        }
         
-        // Chuyển hướng đến dashboard
+        // Lưu thông tin người dùng vào localStorage trước
+        const userData = {
+          staffId: response.data.data.staffId,
+          username: response.data.data.username,
+          fullName: response.data.data.fullName,
+          sRole: response.data.data.sRole,
+          access: response.data.data.access,
+          email: response.data.data.email,
+          phoneNumber: response.data.data.phoneNumber,
+          sAddress: response.data.data.sAddress
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Sau đó cập nhật context
+        login(userData);
+        
+        console.log('Login successful, redirecting to dashboard...');
+        
+        // Sử dụng navigate của React Router thay vì window.location
+        // như trong ví dụ được cung cấp
         navigate('/dashboard');
       } else {
-        // Hiển thị thông báo lỗi từ API
-        message.error(response.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!');
+        message.error(response.data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      message.error('Có lỗi xảy ra. Vui lòng thử lại sau!');
+      
+      // Hiển thị thông báo lỗi cụ thể nếu có
+      if (axios.isAxiosError(error) && error.response) {
+        message.error(error.response.data?.message || 'Đăng nhập thất bại');
+      } else {
+        message.error('Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại sau!');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,7 +100,7 @@ const Login: React.FC = () => {
       >
         <div className="bg-white shadow-xl rounded-lg p-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800">PoolQMS</h2>
+            <h2 className="text-2xl font-bold text-blue-600">PoolQMS</h2>
             <p className="text-gray-600 mt-1">Hệ thống quản lý chất lượng hồ bơi</p>
           </div>
 
@@ -68,6 +110,10 @@ const Login: React.FC = () => {
             onFinish={onFinish}
             layout="vertical"
             size="large"
+            initialValues={{
+              username: 'admin',
+              password: 'admin123'
+            }}
           >
             <Form.Item
               name="username"

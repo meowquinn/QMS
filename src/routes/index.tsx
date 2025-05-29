@@ -1,62 +1,92 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/layouts/MainLayout/MainLayout';
-import Login from '../pages/Login/Login';
-import Dashboard from '../pages/Dashboard/Dashboard';
-import Staff from '../pages/Staff/Staff';
-import PoolList from '../pages/Pools/Pools';
-import Inventory from '../pages/Inventory/Inventory';
-import WaterQualityRecords from '../pages/QualityTracking/WaterQualityRecords';
-import WaterParameters from '../pages/QualityTracking/WaterParameters';
 import { Spin } from 'antd';
 
+// Loading component với Spin từ Ant Design để UX tốt hơn
 const LoadingFallback = () => (
-  <div className="h-screen w-screen flex items-center justify-center">
+  <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
     <Spin size="large" tip="Đang tải..." />
   </div>
 );
 
-// Protected Route component (không cần thiết nếu bạn kiểm tra trong route trực tiếp)
+// Import các trang với React.lazy
+const Dashboard = React.lazy(() => import('../pages/Dashboard'));
+const WaterParameters = React.lazy(() => import('../pages/QualityTracking/WaterParameters'));
+const WaterQualityRecords = React.lazy(() => import('../pages/QualityTracking/WaterQualityRecords'));
+const PoolList = React.lazy(() => import('../pages/Pools/Pools'));
+const Staff = React.lazy(() => import('../pages/Staff/Staff'));
+const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
+const Login = React.lazy(() => import('../pages/Login/Login'));
+
+// Protected Route component
+const ProtectedRoute = ({ isAllowed = false, redirectPath = '/login', children }: {
+  isAllowed: boolean;
+  redirectPath?: string;
+  children?: React.ReactNode;
+}) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return <>{children || <Outlet />}</>;
+};
+
+// Admin Route component
+const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: {
+  isAdmin: boolean;
+  redirectPath?: string;
+  children?: React.ReactNode;
+}) => {
+  if (!isAdmin) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return <>{children || <Outlet />}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { user, isAdmin } = useAuth();
-  
-  // Thêm log để kiểm tra
+
+  // Logging để debug
   useEffect(() => {
-    console.log('AppRoutes - User:', user);
-    console.log('AppRoutes - Is Admin:', isAdmin);
+    console.log('Current user:', user);
+    console.log('Is admin:', isAdmin);
   }, [user, isAdmin]);
 
   return (
     <Router>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* Login route */}
-          <Route
-            path="/login"
-            element={user ? <Navigate to="/dashboard" replace /> : <Login />}
-          />
+          {/* Public Routes */}
+          <Route path="/login" element={
+            user ? <Navigate to="/dashboard" replace /> : <Login />
+          } />
+
+          <Route path="/" element={<Navigate to="/login" replace />} />
           
-          {/* Default route */}
-          <Route
-            path="/"
-            element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
-          />
-          
-          {/* Dashboard và các trang được bảo vệ */}
-          {user ? (
-            <Route path="/" element={<MainLayout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              {isAdmin && <Route path="staff" element={<Staff />} />}
-              <Route path="pools" element={<PoolList />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="quality/records" element={<WaterQualityRecords />} />
-              <Route path="quality/parameters" element={<WaterParameters />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Protected Routes trong MainLayout */}
+          <Route element={<ProtectedRoute isAllowed={!!user} />}>
+            <Route element={<MainLayout />}>
+              {/* Dashboard - cho tất cả người dùng đã đăng nhập */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              
+              {/* Admin Routes */}
+              <Route element={<AdminRoute isAdmin={isAdmin} />}>
+                <Route path="/staff" element={<Staff />} />
+              </Route>
+              
+              {/* Routes cho tất cả người dùng đã đăng nhập */}
+              <Route path="/pools" element={<PoolList />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/quality/records" element={<WaterQualityRecords />} />
+              <Route path="/quality/parameters" element={<WaterParameters />} />
             </Route>
-          ) : (
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          )}
+          </Route>
+          
+          {/* Catch All Route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Suspense>
     </Router>

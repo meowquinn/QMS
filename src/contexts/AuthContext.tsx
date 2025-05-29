@@ -16,8 +16,8 @@ interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
-  isAuthenticated: boolean;
   isAdmin: boolean;
+  isAuthenticated: boolean;
 }
 
 // Tạo context
@@ -25,54 +25,58 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
   logout: () => {},
-  isAuthenticated: false,
-  isAdmin: false
+  isAdmin: false,
+  isAuthenticated: false
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const isAuthenticated = user !== null;
-  const isAdmin = user?.sRole === 'Admin' || user?.access === 'admin';
-
-  // Kiểm tra người dùng đã đăng nhập
+  
+  // Kiểm tra người dùng đã đăng nhập từ localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser) as User;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log('AuthProvider: Restoring user from localStorage:', userData);
         setUser(userData);
-      } catch (error) {
-        console.error('Failed to parse user data:', error);
-        localStorage.removeItem('user');
       }
+    } catch (error) {
+      console.error('Error restoring user from localStorage:', error);
+      localStorage.removeItem('user');
     }
   }, []);
 
+  // Tính toán các giá trị liên quan
+  const isAuthenticated = user !== null;
+  const isAdmin = user?.sRole === 'Admin' || user?.access === 'admin';
+
   // Hàm login
   const login = (userData: User) => {
+    console.log('AuthProvider: Setting user:', userData);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
-    console.log("User logged in:", userData);
   };
 
   // Hàm logout
   const logout = () => {
+    console.log('AuthProvider: Logging out');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setUser(null);
-    console.log("User logged out");
     
-    // Redirect về trang đăng nhập
+    // Chuyển hướng về trang đăng nhập
     window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, isAdmin }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Hook để sử dụng context
 export const useAuth = () => useContext(AuthContext);
 
 export default AuthContext;

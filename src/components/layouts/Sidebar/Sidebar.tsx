@@ -23,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isMobile, 
   isOpen, 
   onClose, 
-  user = { name: "Admin", role: "Quản trị viên" }, // Giá trị mặc định nếu không truyền user
+  user = { name: "Admin", role: "Quản trị viên", avatar: undefined }, // Giá trị mặc định nếu không truyền user
   onLogout 
 }) => {
   const location = useLocation();
