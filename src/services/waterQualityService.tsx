@@ -28,7 +28,7 @@ export const addWaterQualityParameter = async (parameterData: Omit<WaterQualityP
       pTimestamp: parameterData.pTimestamp.toISOString()
     };
     
-    const response = await api.post('/WaterQuality/parameters', dataToSend);
+    const response = await api.post('WaterQualityParameters', dataToSend);
     return response.data;
   } catch (error) {
     console.error('Không thể thêm bản ghi chất lượng nước:', error);
@@ -53,7 +53,7 @@ export const getWaterQualityHistory = async (filters?: {
     if (filters?.endDate) params.endDate = filters.endDate.toISOString();
     if (filters?.createdById) params.createdById = filters.createdById.toString();
     
-    const response = await api.get('/WaterQuality/Parameters', { params });
+    const response = await api.get('/WaterQualityParameters', { params });
     
     // Chuyển đổi chuỗi timestamp thành đối tượng Date và thêm các trường status, resolved, needsAction
     const readings = response.data.map((reading: WaterQualityParameter) => {
@@ -88,7 +88,7 @@ export const getWaterQualityHistory = async (filters?: {
  */
 export const getWaterQualityDetail = async (parameterId: number) => {
   try {
-    const response = await api.get(`/WaterQuality/Parameters/${parameterId}`);
+    const response = await api.get(`/WaterQualityParameters/${parameterId}`);
     
     // Chuyển đổi chuỗi timestamp thành đối tượng Date
     const reading = {
@@ -109,7 +109,7 @@ export const getWaterQualityDetail = async (parameterId: number) => {
  */
 export const updateWaterQualityNotes = async (parameterId: number, notes: string) => {
   try {
-    const response = await api.patch(`/WaterQuality/Parameters/${parameterId}/notes`, {
+    const response = await api.patch(`/WaterQualityParameters/${parameterId}/notes`, {
       notes
     });
     return response.data;
