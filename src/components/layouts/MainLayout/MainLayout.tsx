@@ -50,7 +50,7 @@ const MainLayout: React.FC = () => {
           isMobile={true}
           isOpen={mobileSidebarOpen}
           onClose={() => setMobileSidebarOpen(false)}
-          user={user ?? undefined}
+          user={user ? { name: user.fullName, role: user.sRole } : undefined}
           onLogout={handleLogout}
         />
       )}
@@ -59,7 +59,7 @@ const MainLayout: React.FC = () => {
       {!isMobile && (
         <Sidebar 
           onToggle={handleSidebarToggle}
-          user={user ?? undefined}
+          user={user ? { name: user.fullName, role: user.sRole } : undefined}
           onLogout={handleLogout}
         />
       )}
