@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Badge, Select, DatePicker, Button, Alert, Tooltip } from 'antd';
+import { Card, Table, Tag, Badge, Select, DatePicker, Button, Alert, Tooltip, message } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { 
   InfoCircleOutlined, WarningOutlined, AlertOutlined, 
   CheckCircleOutlined
 } from '@ant-design/icons';
-
+import { getWaterQualityHistory, updateWaterQualityNotes } from '../../services/waterQualityService';
+import { getAllPools } from '../../services/poolService';
+import type { Pool } from '../../services/types';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -15,21 +17,22 @@ type MeasurementStatus = 'normal' | 'warning' | 'critical';
 
 // Định nghĩa kiểu dữ liệu cho bản ghi đo chất lượng nước
 interface WaterQualityRecord {
-  id: string;
-  poolId: string;
+  parameterId: number;
+  poolId: number;
   poolName: string;
-  pHValue: number;
-  chlorineValue: number;
-  temperatureValue: number;
-  timestamp: Date;
+  pHLevel: number;
+  chlorineMgPerL: number;
+  temperatureC: number;
+  pTimestamp: Date;
   status: MeasurementStatus;
-  measuredBy: string;
+  createdById?: number;
+  createdByName?: string;
   resolved: boolean;
   notes?: string;
-  needsAction: boolean; // Có cần xử lý không (pH hoặc Clo vượt ngưỡng)
+  needsAction: boolean;
 }
 
-const QualityMeasurements: React.FC = () => {
+const WaterQualityRecords: React.FC = () => {
   const [records, setRecords] = useState<WaterQualityRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<WaterQualityRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,14 +40,8 @@ const QualityMeasurements: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [showOnlyExceeded, setShowOnlyExceeded] = useState<boolean>(false);
+  const [pools, setPools] = useState<Pool[]>([]);
   
-  // Dữ liệu mẫu về hồ bơi
-  const pools = [
-    { id: 'pool1', name: 'Hồ bơi chính' },
-    { id: 'pool2', name: 'Hồ bơi trẻ em' },
-    { id: 'pool3', name: 'Hồ bơi spa' },
-  ];
-
   // Ngưỡng tiêu chuẩn cho các thông số
   const standards = {
     pH: { min: 7, max: 7.6 },
@@ -52,137 +49,63 @@ const QualityMeasurements: React.FC = () => {
     temperature: { min: 26.0, max: 32.0 }
   };
 
-  // Dữ liệu mẫu cho các bản ghi đo
+  // Lấy danh sách hồ bơi từ API
   useEffect(() => {
-    // Giả lập API call để lấy dữ liệu
-    setTimeout(() => {
-      const mockRecords: WaterQualityRecord[] = [
-        {
-          id: '1',
-          poolId: 'pool1',
-          poolName: 'Hồ bơi chính',
-          pHValue: 8.1,
-          chlorineValue: 2.5,
-          temperatureValue: 28.5,
-          timestamp: new Date(2025, 4, 18, 9, 30),
-          status: 'warning',
-          measuredBy: 'Nguyễn Văn A',
-          resolved: false,
-          notes: 'pH cao, cần điều chỉnh xuống',
-          needsAction: true
-        },
-        {
-          id: '2',
-          poolId: 'pool1',
-          poolName: 'Hồ bơi chính',
-          pHValue: 7.4,
-          chlorineValue: 1.8,
-          temperatureValue: 28.0,
-          timestamp: new Date(2025, 4, 17, 15, 45),
-          status: 'normal',
-          measuredBy: 'Trần Thị B',
-          resolved: false,
-          notes: '',
-          needsAction: false
-        },
-        {
-          id: '3',
-          poolId: 'pool2',
-          poolName: 'Hồ bơi trẻ em',
-          pHValue: 6.8,
-          chlorineValue: 0.6,
-          temperatureValue: 29.5,
-          timestamp: new Date(2025, 4, 18, 8, 15),
-          status: 'critical',
-          measuredBy: 'Lê Văn C',
-          resolved: false,
-          notes: 'pH thấp và chlorine thấp, cần điều chỉnh gấp',
-          needsAction: true
-        },
-        {
-          id: '4',
-          poolId: 'pool2',
-          poolName: 'Hồ bơi trẻ em',
-          pHValue: 7.2,
-          chlorineValue: 1.2,
-          temperatureValue: 29.0,
-          timestamp: new Date(2025, 4, 17, 9, 0),
-          status: 'normal',
-          measuredBy: 'Nguyễn Văn A',
-          resolved: true,
-          notes: 'Sau khi điều chỉnh, các chỉ số đã ổn định',
-          needsAction: false
-        },
-        {
-          id: '5',
-          poolId: 'pool3',
-          poolName: 'Hồ bơi spa',
-          pHValue: 7.3,
-          chlorineValue: 4.2,
-          temperatureValue: 35.0,
-          timestamp: new Date(2025, 4, 18, 11, 20),
-          status: 'warning',
-          measuredBy: 'Trần Thị B',
-          resolved: true,
-          notes: 'Chlorine cao, đã điều chỉnh xuống',
-          needsAction: true
-        },
-        {
-          id: '6',
-          poolId: 'pool3',
-          poolName: 'Hồ bơi spa',
-          pHValue: 7.5,
-          chlorineValue: 2.0,
-          temperatureValue: 36.5,
-          timestamp: new Date(2025, 4, 17, 16, 30),
-          status: 'normal',
-          measuredBy: 'Lê Văn C',
-          resolved: false,
-          notes: '',
-          needsAction: false
-        },
-        {
-          id: '7',
-          poolId: 'pool1',
-          poolName: 'Hồ bơi chính',
-          pHValue: 7.6,
-          chlorineValue: 2.2,
-          temperatureValue: 28.2,
-          timestamp: new Date(2025, 4, 16, 10, 15),
-          status: 'normal',
-          measuredBy: 'Nguyễn Văn A',
-          resolved: false,
-          notes: '',
-          needsAction: false
-        },
-      ];
+    const fetchPools = async () => {
+      try {
+        const poolsData = await getAllPools();
+        setPools(poolsData);
+      } catch (error) {
+        console.error('Không thể tải danh sách hồ bơi:', error);
+        message.error('Không thể tải danh sách hồ bơi');
+      }
+    };
 
-      setRecords(mockRecords);
-      setFilteredRecords(mockRecords);
-      setLoading(false);
-    }, 1000);
+    fetchPools();
   }, []);
 
-  // Áp dụng bộ lọc khi chúng thay đổi
+  // Lấy dữ liệu chất lượng nước từ API
+  useEffect(() => {
+    const fetchWaterQualityData = async () => {
+      try {
+        setLoading(true);
+        
+        // Tạo bộ lọc cho API từ state
+        // Đảm bảo startDate và endDate không phải là null khi truyền vào API
+        const filters: {
+          poolId?: number;
+          startDate?: Date;
+          endDate?: Date;
+        } = {};
+        if (selectedPool !== 'all') {
+          filters.poolId = parseInt(selectedPool);
+        }
+        if (dateRange[0] && dateRange[1]) {
+          filters.startDate = dateRange[0] || undefined;
+          filters.endDate = dateRange[1] || undefined;
+        }
+        
+        const data = await getWaterQualityHistory(filters);
+        setRecords(data);
+        setFilteredRecords(data);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu chất lượng nước:', error);
+        message.error('Không thể tải dữ liệu chất lượng nước');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWaterQualityData();
+  }, [selectedPool, dateRange]);
+
+  // Áp dụng bộ lọc trạng thái và lọc vượt ngưỡng trên dữ liệu client
   useEffect(() => {
     let result = [...records];
-    
-    // Lọc theo hồ bơi
-    if (selectedPool !== 'all') {
-      result = result.filter(record => record.poolId === selectedPool);
-    }
     
     // Lọc theo trạng thái
     if (selectedStatus !== 'all') {
       result = result.filter(record => record.status === selectedStatus);
-    }
-    
-    // Lọc theo khoảng thời gian
-    if (dateRange[0] && dateRange[1]) {
-      result = result.filter(record => {
-        const recordDate = new Date(record.timestamp);
-        return recordDate >= dateRange[0]! && recordDate <= dateRange[1]!;
-      });
     }
     
     // Lọc để chỉ hiển thị các giá trị vượt ngưỡng nếu được chọn
@@ -191,15 +114,37 @@ const QualityMeasurements: React.FC = () => {
     }
     
     setFilteredRecords(result);
-  }, [selectedPool, selectedStatus, dateRange, showOnlyExceeded, records]);
+  }, [selectedStatus, showOnlyExceeded, records]);
 
   // Xử lý đánh dấu đã xử lý
-  const handleResolveIssue = (recordId: string) => {
-    setRecords(prevRecords => 
-      prevRecords.map(record => 
-        record.id === recordId ? { ...record, resolved: true } : record
-      )
-    );
+  const handleResolveIssue = async (parameterId: number) => {
+    try {
+      // Tìm bản ghi cần cập nhật để lấy ghi chú hiện tại
+      const recordToUpdate = records.find(r => r.parameterId === parameterId);
+      if (!recordToUpdate) return;
+
+      // Thêm ghi chú về việc đã xử lý
+      const updatedNotes = recordToUpdate.notes 
+        ? `${recordToUpdate.notes}\n[${new Date().toLocaleString()}] Đã xử lý vấn đề.` 
+        : `[${new Date().toLocaleString()}] Đã xử lý vấn đề.`;
+
+      // Gọi API để cập nhật ghi chú
+      await updateWaterQualityNotes(parameterId, updatedNotes);
+
+      // Cập nhật state cục bộ
+      setRecords(prevRecords => 
+        prevRecords.map(record => 
+          record.parameterId === parameterId 
+            ? { ...record, resolved: true, notes: updatedNotes } 
+            : record
+        )
+      );
+
+      message.success('Đã đánh dấu bản ghi là đã xử lý');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái:', error);
+      message.error('Không thể cập nhật trạng thái bản ghi');
+    }
   };
 
   // Kiểm tra giá trị pH
@@ -242,7 +187,12 @@ const QualityMeasurements: React.FC = () => {
 
   // Định nghĩa các cột trong bảng
   const columns: TableColumnsType<WaterQualityRecord> = [
-    {},
+    {
+      title: 'ID',
+      dataIndex: 'parameterId',
+      key: 'parameterId',
+      width: 80,
+    },
     {
       title: 'Hồ bơi',
       dataIndex: 'poolName',
@@ -250,25 +200,25 @@ const QualityMeasurements: React.FC = () => {
     },
     {
       title: 'pH đã đo',
-      key: 'pHValue',
-      render: (_, record) => renderPHValue(record.pHValue),
-      sorter: (a, b) => a.pHValue - b.pHValue,
+      key: 'pHLevel',
+      render: (_, record) => renderPHValue(record.pHLevel),
+      sorter: (a, b) => a.pHLevel - b.pHLevel,
     },
     {
       title: 'Clo đã đo',
-      key: 'chlorineValue',
-      render: (_, record) => renderChlorineValue(record.chlorineValue),
-      sorter: (a, b) => a.chlorineValue - b.chlorineValue,
+      key: 'chlorineMgPerL',
+      render: (_, record) => renderChlorineValue(record.chlorineMgPerL),
+      sorter: (a, b) => a.chlorineMgPerL - b.chlorineMgPerL,
     },
     {
       title: 'Nhiệt độ đã đo',
-      key: 'temperatureValue',
+      key: 'temperatureC',
       render: (_, record) => {
         // Kiểm tra trạng thái của nhiệt độ
         let status = 'normal';
-        if (record.temperatureValue < standards.temperature.min) {
+        if (record.temperatureC < standards.temperature.min) {
           status = 'low';
-        } else if (record.temperatureValue > standards.temperature.max) {
+        } else if (record.temperatureC > standards.temperature.max) {
           status = 'high';
         }
         
@@ -277,11 +227,11 @@ const QualityMeasurements: React.FC = () => {
         
         return (
           <span style={{ color, fontWeight: status !== 'normal' ? 'bold' : 'normal' }}>
-            {record.temperatureValue.toFixed(1)} °C
+            {record.temperatureC.toFixed(1)} °C
           </span>
         );
       },
-      sorter: (a, b) => a.temperatureValue - b.temperatureValue,
+      sorter: (a, b) => a.temperatureC - b.temperatureC,
     },
     {
       title: 'Trạng thái',
@@ -322,18 +272,18 @@ const QualityMeasurements: React.FC = () => {
     },
     {
       title: 'Thời gian',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
+      dataIndex: 'pTimestamp',
+      key: 'pTimestamp',
       render: (timestamp: Date) => (
-        <span>{timestamp.toLocaleString('vi-VN')}</span>
+        <span>{new Date(timestamp).toLocaleString('vi-VN')}</span>
       ),
-      sorter: (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+      sorter: (a, b) => new Date(a.pTimestamp).getTime() - new Date(b.pTimestamp).getTime(),
       defaultSortOrder: 'descend',
     },
     {
       title: 'Người đo',
-      dataIndex: 'measuredBy',
-      key: 'measuredBy',
+      key: 'createdByName',
+      render: (_, record) => record.createdByName || 'Không xác định',
     },
     {
       title: 'Xử lý',
@@ -374,7 +324,7 @@ const QualityMeasurements: React.FC = () => {
           <Button 
             type="primary" 
             size="small" 
-            onClick={() => handleResolveIssue(record.id)}
+            onClick={() => handleResolveIssue(record.parameterId)}
           >
             Đánh dấu đã xử lý
           </Button>
@@ -427,10 +377,13 @@ const QualityMeasurements: React.FC = () => {
               className="w-full"
               value={selectedPool}
               onChange={setSelectedPool}
+              loading={loading}
             >
               <Option value="all">Tất cả hồ bơi</Option>
               {pools.map(pool => (
-                <Option key={pool.id} value={pool.id}>{pool.name}</Option>
+                <Option key={pool.poolsId.toString()} value={pool.poolsId.toString()}>
+                  {pool.poolName}
+                </Option>
               ))}
             </Select>
           </div>
@@ -453,10 +406,14 @@ const QualityMeasurements: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Khoảng thời gian</label>
             <RangePicker 
               className="w-full"
-              onChange={(_, dateStrings) => {
-                const startDate = dateStrings[0] ? new Date(dateStrings[0]) : null;
-                const endDate = dateStrings[1] ? new Date(dateStrings[1]) : null;
-                setDateRange([startDate, endDate]);
+              onChange={(dates) => {
+                if (dates) {
+                  const startDate = dates[0]?.toDate() || null;
+                  const endDate = dates[1]?.toDate() || null;
+                  setDateRange([startDate, endDate]);
+                } else {
+                  setDateRange([null, null]);
+                }
               }}
             />
           </div>
@@ -489,7 +446,7 @@ const QualityMeasurements: React.FC = () => {
           <Table 
             columns={columns}
             dataSource={filteredRecords}
-            rowKey="id"
+            rowKey="parameterId"
             loading={loading}
             rowClassName={(record) => record.needsAction && !record.resolved ? 'bg-red-50' : ''}
             pagination={{ 
@@ -506,4 +463,4 @@ const QualityMeasurements: React.FC = () => {
   );
 };
 
-export default QualityMeasurements;
+export default WaterQualityRecords;
