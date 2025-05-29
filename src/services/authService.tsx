@@ -27,7 +27,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
     const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, 
       { 
         username, 
-        sPassword: password // Đổi từ password sang sPassword
+        password // Đổi từ password sang sPassword
       },
       {
         headers: {
