@@ -3,7 +3,7 @@ import { Form, Input, Button, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth, type User } from "../../contexts/AuthContext";
 import { login } from "../../services/authService";
 
 // Hàm lấy API URL với cổng 7021
@@ -18,7 +18,7 @@ import { login } from "../../services/authService";
 // };
 
 interface LoginProps {
-  onLogin: (userData: unknown) => void;
+  onLogin: (userData: User) => void;
 }
 
 interface LoginFormValues {
@@ -55,10 +55,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         // Chuẩn bị dữ liệu người dùng
         const userData = {
-          id: response.staffId,
+          staffId: response.staffId,
           username: response.username,
-          name: response.fullName,
-          role: response.sRole,
+          fullName: response.fullName,
+          sRole: response.sRole,
           access: response.access,
           email: response.email,
           phoneNumber: response.phoneNumber,

@@ -3,12 +3,12 @@ import { getAllStaff, createStaff, updateStaff, deleteStaff } from '../../servic
 import { 
   Table, Input, Button, Modal, Form, 
   Select, Space, message, Tag, Popconfirm,
-  Card, Tooltip
+  Card, Tooltip, Descriptions
 } from 'antd';
 import { 
   SearchOutlined, PlusOutlined, EditOutlined, 
   DeleteOutlined, UserOutlined, PhoneOutlined, 
-  MailOutlined, LockOutlined
+  MailOutlined, LockOutlined, EnvironmentOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import type { StaffMember } from '../../services/types';
@@ -19,6 +19,8 @@ const Staff: React.FC = () => {
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [isViewModalVisible, setIsViewModalVisible] = useState<boolean>(false);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [form] = Form.useForm();
@@ -30,31 +32,10 @@ const Staff: React.FC = () => {
       try {
         setLoading(true);
         
-        // Nếu là admin, lấy tất cả nhân viên
-        if (isAdmin) {
-          const data = await getAllStaff();
-          setStaffList(data);
-          setFilteredStaff(data);
-        } else {
-          // Nếu là user thường, chỉ lấy thông tin của chính mình
-          // Hoặc một danh sách hạn chế (tùy thuộc vào API của bạn)
-          try {
-            const data = await getAllStaff();
-            setStaffList(data);
-            setFilteredStaff(data);
-          } catch (error) {
-            if (typeof error === 'object' && error !== null && 'response' in error && (error as { response?: { status?: number } }).response?.status === 403) {
-              // Nếu không có quyền xem tất cả, thử lấy thông tin cá nhân
-              const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-              // Tạo mảng chỉ có user hiện tại
-              const userData = currentUser.staffId ? [currentUser] : [];
-              setStaffList(userData);
-              setFilteredStaff(userData);
-            } else {
-              throw error; // Ném lỗi để xử lý bên ngoài
-            }
-          }
-        }
+        // Lấy tất cả nhân viên không phân biệt quyền
+        const data = await getAllStaff();
+        setStaffList(data);
+        setFilteredStaff(data);
       } catch (error) {
         message.error('Không thể tải danh sách nhân viên');
         console.error(error);
@@ -64,18 +45,18 @@ const Staff: React.FC = () => {
     };
 
     fetchStaff();
-  }, [isAdmin]);
+  }, []);
 
   // Xử lý tìm kiếm nhân viên
   useEffect(() => {
     const filteredData = staffList.filter(staff => 
       staff.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
       staff.sRole.toLowerCase().includes(searchText.toLowerCase()) ||
-      (isAdmin && staff.username.toLowerCase().includes(searchText.toLowerCase())) ||
-      (isAdmin && staff.email.toLowerCase().includes(searchText.toLowerCase()))
+      staff.username.toLowerCase().includes(searchText.toLowerCase()) ||
+      staff.email.toLowerCase().includes(searchText.toLowerCase())
     );
     setFilteredStaff(filteredData);
-  }, [searchText, staffList, isAdmin]);
+  }, [searchText, staffList]);
 
   // Hiển thị modal thêm nhân viên mới
   const showAddModal = () => {
@@ -99,7 +80,7 @@ const Staff: React.FC = () => {
     // Không hiển thị mật khẩu khi chỉnh sửa
     form.setFieldsValue({
       ...staff,
-      // Đặt giá trị cho các trường trong form theo đúng tên trường mới
+      sPassword: '', // Không hiển thị mật khẩu cũ
       fullName: staff.fullName,
       sRole: staff.sRole,
       phoneNumber: staff.phoneNumber,
@@ -108,10 +89,22 @@ const Staff: React.FC = () => {
     setIsModalVisible(true);
   };
 
+  // Hiển thị modal xem chi tiết nhân viên (cho nhân viên thường)
+  const showViewModal = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setIsViewModalVisible(true);
+  };
+
   // Đóng modal
   const handleCancel = () => {
     setIsModalVisible(false);
     form.resetFields();
+  };
+
+  // Đóng modal xem chi tiết
+  const handleViewCancel = () => {
+    setIsViewModalVisible(false);
+    setSelectedStaff(null);
   };
 
   // Xử lý thêm/sửa nhân viên
@@ -184,12 +177,13 @@ const Staff: React.FC = () => {
     }
   };
 
+  // Các cột cho admin
   const adminColumns = [
     {
       title: 'ID',
       dataIndex: 'staffId',
       key: 'staffId',
-      width: 100,
+      width: 80,
       render: (staffId: number) => (
         <span className="text-xs text-gray-500">
           {staffId}
@@ -223,6 +217,7 @@ const Staff: React.FC = () => {
         <Space size="middle">
           <Tooltip title={record.phoneNumber}>
             <PhoneOutlined className="text-blue-600" />
+            <span className="ml-1">{record.phoneNumber}</span>
           </Tooltip>
           <Tooltip title={record.email}>
             <MailOutlined className="text-blue-600" />
@@ -272,13 +267,13 @@ const Staff: React.FC = () => {
     }
   ];
 
-  // Columns cho user thường
+  // Cột cho nhân viên thường - bổ sung thêm thông tin liên hệ
   const userColumns = [
     {
       title: 'ID',
       dataIndex: 'staffId',
       key: 'staffId',
-      width: 100,
+      width: 80,
       render: (staffId: number) => (
         <span className="text-xs text-gray-500 font-mono">
           {staffId}
@@ -301,18 +296,42 @@ const Staff: React.FC = () => {
       key: 'sRole',
     },
     {
-      title: 'Liên hệ',
-      key: 'contact',
-      render: (_text: string, record: StaffMember) => (
-        <Space size="middle">
-          <Tooltip title={record.phoneNumber}>
-            <PhoneOutlined className="text-blue-600" />
-          </Tooltip>
-          <Tooltip title={record.email}>
-            <MailOutlined className="text-blue-600" />
-          </Tooltip>
-        </Space>
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email: string) => (
+        <div className="flex items-center">
+          <MailOutlined className="text-blue-600 mr-1" />
+          <span>{email}</span>
+        </div>
       ),
+    },
+    {
+      title: 'Số điện thoại',
+      dataIndex: 'phoneNumber',
+      key: 'phoneNumber',
+      render: (phone: string) => (
+        <div className="flex items-center">
+          <PhoneOutlined className="text-blue-600 mr-1" />
+          <span>{phone}</span>
+        </div>
+      ),
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      render: (_text: string, record: StaffMember) => (
+        <Button
+          icon={<UserOutlined />}
+          type="primary"
+          size="small"
+          onClick={() => showViewModal(record)}
+          className="bg-blue-500"
+          ghost
+        >
+          Xem chi tiết
+        </Button>
+      )
     }
   ];
 
@@ -324,7 +343,7 @@ const Staff: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Danh sách nhân viên</h1>
-          <p className="text-gray-600">Quản lý thông tin của tất cả nhân viên trong hệ thống</p>
+          <p className="text-gray-600">Thông tin liên hệ của tất cả nhân viên trong hệ thống</p>
         </div>
         <div className="mt-4 md:mt-0 flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
           <Input
@@ -360,24 +379,29 @@ const Staff: React.FC = () => {
               pageSizeOptions: ['10', '20', '50'],
               showTotal: (total) => `Tổng số: ${total} nhân viên`,
             }}
-            expandable={isAdmin ? {
-              expandedRowRender: record => (
-                <div className="p-2">
-                  {record.sAddress && (
-                    <div className="text-sm mb-1">
-                      <span className="font-semibold">Địa chỉ:</span> {record.sAddress}
+            expandable={
+              isAdmin ? {
+                expandedRowRender: record => (
+                  <div className="p-2">
+                    {record.sAddress && (
+                      <div className="text-sm mb-1">
+                        <span className="font-semibold">Địa chỉ:</span> {record.sAddress}
+                      </div>
+                    )}
+                    <div className="text-sm">
+                      <span className="font-semibold">Email:</span> {record.email}
                     </div>
-                  )}
-                </div>
-              ),
-              rowExpandable: record => !!record.sAddress,
-            } : undefined}
+                  </div>
+                ),
+                rowExpandable: () => true,
+              } : undefined
+            }
             scroll={{ x: 'max-content' }}
           />
         </div>
       </Card>
 
-      {/* Modal thêm/sửa nhân viên */}
+      {/* Modal thêm/sửa nhân viên (chỉ cho admin) */}
       <Modal
         title={editingStaff ? "Chỉnh sửa thông tin nhân viên" : "Thêm nhân viên mới"}
         open={isModalVisible}
@@ -501,6 +525,56 @@ const Staff: React.FC = () => {
             </Form.Item>
           </div>
         </Form>
+      </Modal>
+
+      {/* Modal xem chi tiết nhân viên (cho nhân viên thường) */}
+      <Modal
+        title="Thông tin chi tiết nhân viên"
+        open={isViewModalVisible}
+        onCancel={handleViewCancel}
+        footer={[
+          <Button key="back" onClick={handleViewCancel}>
+            Đóng
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedStaff && (
+          <Descriptions bordered column={1} size="small" className="bg-gray-50 p-4 rounded">
+            <Descriptions.Item label="Họ và tên" labelStyle={{ fontWeight: 'bold' }}>
+              {selectedStaff.fullName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Vai trò" labelStyle={{ fontWeight: 'bold' }}>
+              {selectedStaff.sRole}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email" labelStyle={{ fontWeight: 'bold' }}>
+              <div className="flex items-center">
+                <MailOutlined className="text-blue-600 mr-2" />
+                {selectedStaff.email}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Số điện thoại" labelStyle={{ fontWeight: 'bold' }}>
+              <div className="flex items-center">
+                <PhoneOutlined className="text-blue-600 mr-2" />
+                {selectedStaff.phoneNumber}
+              </div>
+            </Descriptions.Item>
+            {selectedStaff.sAddress && (
+              <Descriptions.Item label="Địa chỉ" labelStyle={{ fontWeight: 'bold' }}>
+                <div className="flex items-center">
+                  <EnvironmentOutlined className="text-blue-600 mr-2" />
+                  {selectedStaff.sAddress}
+                </div>
+              </Descriptions.Item>
+            )}
+            <Descriptions.Item label="ID Nhân viên" labelStyle={{ fontWeight: 'bold' }}>
+              <span className="text-gray-600 font-mono">{selectedStaff.staffId}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="Quyền truy cập" labelStyle={{ fontWeight: 'bold' }}>
+              {renderAccess(selectedStaff.access)}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Modal>
     </div>
   );

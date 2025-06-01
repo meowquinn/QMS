@@ -33,23 +33,8 @@ const ProtectedRoute = ({ isAllowed = false, redirectPath = '/login', children }
   return <>{children || <Outlet />}</>;
 };
 
-// Admin Route component
-const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: {
-  isAdmin: boolean;
-  redirectPath?: string;
-  children?: React.ReactNode;
-}) => {
-  if (!isAdmin) {
-    return <Navigate to={redirectPath} replace />;
-  }
-  
-  return <>{children || <Outlet />}</>;
-};
-
 const AppRoutes: React.FC = () => {
   const { user, login, isAdmin } = useAuth();
-
-  
   
   // Logging để debug
   useEffect(() => {
@@ -74,12 +59,8 @@ const AppRoutes: React.FC = () => {
               {/* Dashboard - cho tất cả người dùng đã đăng nhập */}
               <Route path="/dashboard" element={<Dashboard />} />
               
-              {/* Admin Routes */}
-              <Route element={<AdminRoute isAdmin={isAdmin} />}>
-                <Route path="/staff" element={<Staff />} />
-              </Route>
-              
               {/* Routes cho tất cả người dùng đã đăng nhập */}
+              <Route path="/staff" element={<Staff />} />
               <Route path="/pools" element={<PoolList />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/quality/records" element={<WaterQualityRecords />} />
