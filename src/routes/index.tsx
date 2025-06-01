@@ -33,6 +33,19 @@ const ProtectedRoute = ({ isAllowed = false, redirectPath = '/login', children }
   return <>{children || <Outlet />}</>;
 };
 
+const AppRoutes: React.FC = () => {// Admin Route component
+const AdminRoute = ({ isAdmin = false, redirectPath = '/dashboard', children }: {
+  isAdmin: boolean;
+  redirectPath?: string;
+  children?: React.ReactNode;
+}) => {
+  if (!isAdmin) {
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  return <>{children || <Outlet />}</>;
+};
+
 const AppRoutes: React.FC = () => {
   const { user, login, isAdmin } = useAuth();
   
@@ -78,3 +91,5 @@ const AppRoutes: React.FC = () => {
 
 export default AppRoutes;
 
+
+            <Route path="/inventory" element={<Inventory />} />q              <Route path="/quality/records" element={<WaterQualityRecords />} />q              <Route path="/quality/parameters" element={<WaterParameters />} />             </Route>           </Route>ch All Route          {/* Catch All Route */}e          <Route path="*" element={<Navigate to="/login" replace />} />s        </Routes>e      </Suspense>t    </Router>o  );;};  export default AppRoutes;  
