@@ -3,12 +3,12 @@ import { getAllStaff, createStaff, updateStaff, deleteStaff } from '../../servic
 import { 
   Table, Input, Button, Modal, Form, 
   Select, Space, message, Tag, Popconfirm,
-  Card, Tooltip, Descriptions
+  Card, Tooltip
 } from 'antd';
 import { 
   SearchOutlined, PlusOutlined, EditOutlined, 
   DeleteOutlined, UserOutlined, PhoneOutlined, 
-  MailOutlined, LockOutlined, EnvironmentOutlined
+  MailOutlined, LockOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import type { StaffMember } from '../../services/types';
@@ -19,8 +19,6 @@ const Staff: React.FC = () => {
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [isViewModalVisible, setIsViewModalVisible] = useState<boolean>(false);
-  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [form] = Form.useForm();
@@ -31,8 +29,6 @@ const Staff: React.FC = () => {
     const fetchStaff = async () => {
       try {
         setLoading(true);
-        
-        // Lấy tất cả nhân viên không phân biệt quyền
         const data = await getAllStaff();
         setStaffList(data);
         setFilteredStaff(data);
@@ -52,59 +48,36 @@ const Staff: React.FC = () => {
     const filteredData = staffList.filter(staff => 
       staff.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
       staff.sRole.toLowerCase().includes(searchText.toLowerCase()) ||
-      staff.username.toLowerCase().includes(searchText.toLowerCase()) ||
-      staff.email.toLowerCase().includes(searchText.toLowerCase())
+      (staff.username && staff.username.toLowerCase().includes(searchText.toLowerCase())) ||
+      (staff.email && staff.email.toLowerCase().includes(searchText.toLowerCase()))
     );
     setFilteredStaff(filteredData);
   }, [searchText, staffList]);
 
   // Hiển thị modal thêm nhân viên mới
   const showAddModal = () => {
-    if (!isAdmin) {
-      message.warning('Bạn không có quyền thêm nhân viên mới');
-      return;
-    }
     setEditingStaff(null);
     form.resetFields();
+    form.setFieldsValue({
+      access: 'user', // Mặc định là user thường
+    });
     setIsModalVisible(true);
   };
 
   // Hiển thị modal chỉnh sửa nhân viên
   const showEditModal = (staff: StaffMember) => {
-    if (!isAdmin) {
-      message.warning('Bạn không có quyền chỉnh sửa thông tin nhân viên');
-      return;
-    }
     setEditingStaff(staff);
-
-    // Không hiển thị mật khẩu khi chỉnh sửa
     form.setFieldsValue({
       ...staff,
       sPassword: '', // Không hiển thị mật khẩu cũ
-      fullName: staff.fullName,
-      sRole: staff.sRole,
-      phoneNumber: staff.phoneNumber,
-      sAddress: staff.sAddress
     });
     setIsModalVisible(true);
-  };
-
-  // Hiển thị modal xem chi tiết nhân viên (cho nhân viên thường)
-  const showViewModal = (staff: StaffMember) => {
-    setSelectedStaff(staff);
-    setIsViewModalVisible(true);
   };
 
   // Đóng modal
   const handleCancel = () => {
     setIsModalVisible(false);
     form.resetFields();
-  };
-
-  // Đóng modal xem chi tiết
-  const handleViewCancel = () => {
-    setIsViewModalVisible(false);
-    setSelectedStaff(null);
   };
 
   // Xử lý thêm/sửa nhân viên
@@ -150,11 +123,6 @@ const Staff: React.FC = () => {
 
   // Xử lý xóa nhân viên
   const handleDelete = async (staffId: number) => {
-    if (!isAdmin) {
-      message.warning('Bạn không có quyền xóa nhân viên');
-      return;
-    }
-    
     try {
       await deleteStaff(staffId);
       setStaffList(prev => prev.filter(staff => staff.staffId !== staffId));
@@ -177,8 +145,8 @@ const Staff: React.FC = () => {
     }
   };
 
-  // Các cột cho admin
-  const adminColumns = [
+  // Định nghĩa các cột
+  const columns = [
     {
       title: 'ID',
       dataIndex: 'staffId',
@@ -235,108 +203,39 @@ const Staff: React.FC = () => {
       title: 'Thao tác',
       key: 'action',
       render: (_text: string, record: StaffMember) => (
-        <Space size="middle">
-          <Button
-            icon={<EditOutlined />}
-            type="primary"
-            size="small"
-            onClick={() => showEditModal(record)}
-            className="bg-blue-500"
-            ghost
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa nhân viên này?"
-            onConfirm={() => handleDelete(record.staffId)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
+        isAdmin ? (
+          <Space size="middle">
             <Button
-              icon={<DeleteOutlined />}
+              icon={<EditOutlined />}
               type="primary"
               size="small"
-              danger
+              onClick={() => showEditModal(record)}
+              className="bg-blue-500"
               ghost
             >
-              Xóa
+              Sửa
             </Button>
-          </Popconfirm>
-        </Space>
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa nhân viên này?"
+              onConfirm={() => handleDelete(record.staffId)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button
+                icon={<DeleteOutlined />}
+                type="primary"
+                size="small"
+                danger
+                ghost
+              >
+                Xóa
+              </Button>
+            </Popconfirm>
+          </Space>
+        ) : null  // Nhân viên thường không thấy nút thao tác
       )
     }
   ];
-
-  // Cột cho nhân viên thường - bổ sung thêm thông tin liên hệ
-  const userColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'staffId',
-      key: 'staffId',
-      width: 80,
-      render: (staffId: number) => (
-        <span className="text-xs text-gray-500 font-mono">
-          {staffId}
-        </span>
-      ),
-    },
-    {
-      title: 'Nhân viên',
-      dataIndex: 'fullName',
-      key: 'fullName',
-      render: (_text: string, record: StaffMember) => (
-        <div className="font-medium text-gray-800">
-          {record.fullName}
-        </div>
-      ),
-    },
-    {
-      title: 'Vai trò',
-      dataIndex: 'sRole',
-      key: 'sRole',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      render: (email: string) => (
-        <div className="flex items-center">
-          <MailOutlined className="text-blue-600 mr-1" />
-          <span>{email}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Số điện thoại',
-      dataIndex: 'phoneNumber',
-      key: 'phoneNumber',
-      render: (phone: string) => (
-        <div className="flex items-center">
-          <PhoneOutlined className="text-blue-600 mr-1" />
-          <span>{phone}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_text: string, record: StaffMember) => (
-        <Button
-          icon={<UserOutlined />}
-          type="primary"
-          size="small"
-          onClick={() => showViewModal(record)}
-          className="bg-blue-500"
-          ghost
-        >
-          Xem chi tiết
-        </Button>
-      )
-    }
-  ];
-
-  // Chọn cột hiển thị dựa trên quyền người dùng
-  const columns = isAdmin ? adminColumns : userColumns;
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -379,203 +278,153 @@ const Staff: React.FC = () => {
               pageSizeOptions: ['10', '20', '50'],
               showTotal: (total) => `Tổng số: ${total} nhân viên`,
             }}
-            expandable={
-              isAdmin ? {
-                expandedRowRender: record => (
-                  <div className="p-2">
-                    {record.sAddress && (
-                      <div className="text-sm mb-1">
-                        <span className="font-semibold">Địa chỉ:</span> {record.sAddress}
-                      </div>
-                    )}
-                    <div className="text-sm">
-                      <span className="font-semibold">Email:</span> {record.email}
+            expandable={{
+              expandedRowRender: record => (
+                <div className="p-2">
+                  {record.sAddress && (
+                    <div className="text-sm mb-1">
+                      <span className="font-semibold">Địa chỉ:</span> {record.sAddress}
                     </div>
+                  )}
+                  <div className="text-sm">
+                    <span className="font-semibold">Email:</span> {record.email}
                   </div>
-                ),
-                rowExpandable: () => true,
-              } : undefined
-            }
+                </div>
+              ),
+              rowExpandable: record => !!record.sAddress || !!record.email,
+            }}
             scroll={{ x: 'max-content' }}
           />
         </div>
       </Card>
 
       {/* Modal thêm/sửa nhân viên (chỉ cho admin) */}
-      <Modal
-        title={editingStaff ? "Chỉnh sửa thông tin nhân viên" : "Thêm nhân viên mới"}
-        open={isModalVisible}
-        onCancel={handleCancel}
-        onOk={handleSubmit}
-        width={800}
-        okText={editingStaff ? "Cập nhật" : "Thêm mới"}
-        cancelText="Hủy"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            access: 'user',
-          }}
+      {isAdmin && (
+        <Modal
+          title={editingStaff ? "Chỉnh sửa thông tin nhân viên" : "Thêm nhân viên mới"}
+          visible={isModalVisible}
+          onCancel={handleCancel}
+          onOk={handleSubmit}
+          width={800}
+          okText={editingStaff ? "Cập nhật" : "Thêm mới"}
+          cancelText="Hủy"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="fullName"
-              label="Họ và tên"
-              rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Nhập họ tên nhân viên" />
-            </Form.Item>
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{
+              access: 'user',
+            }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="fullName"
+                label="Họ và tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
+              >
+                <Input prefix={<UserOutlined />} placeholder="Nhập họ tên nhân viên" />
+              </Form.Item>
 
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email!' },
-                { type: 'email', message: 'Email không hợp lệ!' }
-              ]}
-            >
-              <Input prefix={<MailOutlined />} placeholder="Nhập email" />
-            </Form.Item>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập email!' },
+                  { type: 'email', message: 'Email không hợp lệ!' }
+                ]}
+              >
+                <Input prefix={<MailOutlined />} placeholder="Nhập email" />
+              </Form.Item>
 
-            <Form.Item
-              name="phoneNumber"
-              label="Số điện thoại"
-              rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
-            >
-              <Input prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại" />
-            </Form.Item>
+              <Form.Item
+                name="phoneNumber"
+                label="Số điện thoại"
+                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
+              >
+                <Input prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại" />
+              </Form.Item>
 
-            <Form.Item
-              name="sRole"
-              label="Vai trò"
-              rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
-            >
-              <Select placeholder="Chọn vai trò">
-                <Select.Option value="Quản lý">Quản lý</Select.Option>
-                <Select.Option value="Kỹ thuật viên">Kỹ thuật viên</Select.Option>
-                <Select.Option value="Nhân viên đo đạc">Nhân viên đo đạc</Select.Option>
-              </Select>
-            </Form.Item>
+              <Form.Item
+                name="sRole"
+                label="Vai trò"
+                rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+              >
+                <Select placeholder="Chọn vai trò">
+                  <Select.Option value="Quản lý">Quản lý</Select.Option>
+                  <Select.Option value="Kỹ thuật viên">Kỹ thuật viên</Select.Option>
+                  <Select.Option value="Nhân viên đo đạc">Nhân viên đo đạc</Select.Option>
+                </Select>
+              </Form.Item>
 
-            <Form.Item
-              name="username"
-              label="Tên đăng nhập."
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
-                {
-                  validator(_, value) {
-                    if (!value || (editingStaff && value === editingStaff.username)) {
+              <Form.Item
+                name="username"
+                label="Tên đăng nhập"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
+                  {
+                    validator(_, value) {
+                      if (!value || (editingStaff && value === editingStaff.username)) {
+                        return Promise.resolve();
+                      }
+                      
+                      const isDuplicate = staffList.some(
+                        staff => staff.username === value && staff.staffId !== (editingStaff?.staffId || 0)
+                      );
+                      
+                      if (isDuplicate) {
+                        return Promise.reject(new Error('Tên đăng nhập đã tồn tại!'));
+                      }
                       return Promise.resolve();
-                    }
-                    
-                    const isDuplicate = staffList.some(
-                      staff => staff.username === value && staff.staffId !== (editingStaff?.staffId || 0)
-                    );
-                    
-                    if (isDuplicate) {
-                      return Promise.reject(new Error('Tên đăng nhập đã tồn tại!'));
-                    }
-                    return Promise.resolve();
+                    },
                   },
-                },
-              ]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Nhập tên đăng nhập" />
-            </Form.Item>
+                ]}
+              >
+                <Input prefix={<UserOutlined />} placeholder="Nhập tên đăng nhập" />
+              </Form.Item>
 
-            <Form.Item
-              name="sPassword"
-              label={editingStaff ? "Đặt lại mật khẩu" : "Mật khẩu"}
-              rules={[
-                { 
-                  required: !editingStaff, 
-                  message: 'Vui lòng nhập mật khẩu!' 
-                },
-                { 
-                  min: 6, 
-                  message: 'Mật khẩu phải có ít nhất 6 ký tự!' 
-                }
-              ]}
-              tooltip={editingStaff ? "Để trống nếu không muốn thay đổi mật khẩu" : "Mật khẩu cần tối thiểu 6 ký tự"}
-            >
-              <Input.Password 
-                prefix={<LockOutlined />} 
-                placeholder={editingStaff ? "Nhập mật khẩu mới để thay đổi" : "Nhập mật khẩu"} 
-              />
-            </Form.Item>
+              <Form.Item
+                name="sPassword"
+                label={editingStaff ? "Đặt lại mật khẩu" : "Mật khẩu"}
+                rules={[
+                  { 
+                    required: !editingStaff, 
+                    message: 'Vui lòng nhập mật khẩu!' 
+                  },
+                  { 
+                    min: 6, 
+                    message: 'Mật khẩu phải có ít nhất 6 ký tự!' 
+                  }
+                ]}
+                tooltip={editingStaff ? "Để trống nếu không muốn thay đổi mật khẩu" : "Mật khẩu cần tối thiểu 6 ký tự"}
+              >
+                <Input.Password 
+                  prefix={<LockOutlined />} 
+                  placeholder={editingStaff ? "Nhập mật khẩu mới để thay đổi" : "Nhập mật khẩu"} 
+                />
+              </Form.Item>
 
-            <Form.Item
-              name="access"
-              label="Quyền truy cập"
-              rules={[{ required: true, message: 'Vui lòng chọn quyền truy cập!' }]}
-            >
-              <Select placeholder="Chọn quyền truy cập">
-                <Select.Option value="admin">Quản trị viên</Select.Option>
-                <Select.Option value="user">Nhân viên</Select.Option>
-              </Select>
-            </Form.Item>
+              <Form.Item
+                name="access"
+                label="Quyền truy cập"
+                rules={[{ required: true, message: 'Vui lòng chọn quyền truy cập!' }]}
+              >
+                <Select placeholder="Chọn quyền truy cập">
+                  <Select.Option value="admin">Quản trị viên</Select.Option>
+                  <Select.Option value="user">Nhân viên</Select.Option>
+                </Select>
+              </Form.Item>
 
-            <Form.Item
-              name="sAddress"
-              label="Địa chỉ"
-              className="md:col-span-2"
-            >
-              <Input.TextArea rows={2} placeholder="Nhập địa chỉ nhân viên" />
-            </Form.Item>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* Modal xem chi tiết nhân viên (cho nhân viên thường) */}
-      <Modal
-        title="Thông tin chi tiết nhân viên"
-        open={isViewModalVisible}
-        onCancel={handleViewCancel}
-        footer={[
-          <Button key="back" onClick={handleViewCancel}>
-            Đóng
-          </Button>,
-        ]}
-        width={600}
-      >
-        {selectedStaff && (
-          <Descriptions bordered column={1} size="small" className="bg-gray-50 p-4 rounded">
-            <Descriptions.Item label="Họ và tên" labelStyle={{ fontWeight: 'bold' }}>
-              {selectedStaff.fullName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Vai trò" labelStyle={{ fontWeight: 'bold' }}>
-              {selectedStaff.sRole}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email" labelStyle={{ fontWeight: 'bold' }}>
-              <div className="flex items-center">
-                <MailOutlined className="text-blue-600 mr-2" />
-                {selectedStaff.email}
-              </div>
-            </Descriptions.Item>
-            <Descriptions.Item label="Số điện thoại" labelStyle={{ fontWeight: 'bold' }}>
-              <div className="flex items-center">
-                <PhoneOutlined className="text-blue-600 mr-2" />
-                {selectedStaff.phoneNumber}
-              </div>
-            </Descriptions.Item>
-            {selectedStaff.sAddress && (
-              <Descriptions.Item label="Địa chỉ" labelStyle={{ fontWeight: 'bold' }}>
-                <div className="flex items-center">
-                  <EnvironmentOutlined className="text-blue-600 mr-2" />
-                  {selectedStaff.sAddress}
-                </div>
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="ID Nhân viên" labelStyle={{ fontWeight: 'bold' }}>
-              <span className="text-gray-600 font-mono">{selectedStaff.staffId}</span>
-            </Descriptions.Item>
-            <Descriptions.Item label="Quyền truy cập" labelStyle={{ fontWeight: 'bold' }}>
-              {renderAccess(selectedStaff.access)}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
+              <Form.Item
+                name="sAddress"
+                label="Địa chỉ"
+                className="md:col-span-2"
+              >
+                <Input.TextArea rows={2} placeholder="Nhập địa chỉ nhân viên" />
+              </Form.Item>
+            </div>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 };
