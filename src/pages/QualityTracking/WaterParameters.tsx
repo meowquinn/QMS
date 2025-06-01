@@ -196,7 +196,7 @@ const WaterParameters: React.FC = () => {
     handleInputChange('timestamp', value ? value.toDate() : null);
   };
 
-  // Thêm ghi chú về điều chỉnh hoá chất
+  // Thêm ghi chú về điều chỉnh hoá chất.
   const addChemicalAdjustmentNotes = () => {
     let notes = formData.notes;
     
