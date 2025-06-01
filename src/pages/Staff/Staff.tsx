@@ -460,7 +460,7 @@ const Staff: React.FC = () => {
 
             <Form.Item
               name="username"
-              label="Tên đăng nhập"
+              label="Tên đăng nhập."
               rules={[
                 { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
                 {
