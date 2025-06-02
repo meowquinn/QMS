@@ -25,7 +25,7 @@ const MainLayout: React.FC = () => {
     // Thêm event listener để kiểm tra khi resize window
     window.addEventListener('resize', checkIfMobile);
     
-    // Cleanup event listener khi component unmount
+    // Cleanup event listener khi component unmountfff
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
