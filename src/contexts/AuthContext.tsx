@@ -1,14 +1,14 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
-// Định nghĩa kiểu dữ liệu User
+// Định nghĩa kiểu dữ liệu User phù hợp với API
 export interface User {
   staffId: number;
   username: string;
-  fullName: string;
+  fullName: string; 
   sRole: string;
   access: string;
-  email: string;
-  phoneNumber: string;
+  email?: string;
+  phoneNumber?: string;
   sAddress?: string;
 }
 
@@ -32,41 +32,36 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   
-  // Kiểm tra người dùng đã đăng nhập từ localStorage
+  // Khôi phục user từ localStorage khi load trang
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
         const userData = JSON.parse(storedUser);
-        console.log('AuthProvider: Restoring user from localStorage:', userData);
         setUser(userData);
+      } catch (error) {
+        console.error('Error parsing user data from localStorage', error);
+        localStorage.removeItem('user');
       }
-    } catch (error) {
-      console.error('Error restoring user from localStorage:', error);
-      localStorage.removeItem('user');
     }
   }, []);
 
-  // Tính toán các giá trị liên quan
+  // Tính toán các properties
   const isAuthenticated = user !== null;
-  const isAdmin = user?.sRole === 'Admin' || user?.access === 'admin';
+  const isAdmin = user?.access === 'admin' || user?.sRole === 'Admin';
 
   // Hàm login
   const login = (userData: User) => {
-    console.log('AuthProvider: Setting user:', userData);
-    localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   // Hàm logout
   const logout = () => {
-    console.log('AuthProvider: Logging out');
+    setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    setUser(null);
-    
-    // Chuyển hướng về trang đăng nhập
-    window.location.href = '/login';
+    // Xóa authorization header
   };
 
   return (

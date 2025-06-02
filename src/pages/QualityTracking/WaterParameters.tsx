@@ -196,7 +196,7 @@ const WaterParameters: React.FC = () => {
     handleInputChange('timestamp', value ? value.toDate() : null);
   };
 
-  // Thêm ghi chú về điều chỉnh hoá chất
+  // Thêm ghi chú về điều chỉnh hoá chất.
   const addChemicalAdjustmentNotes = () => {
     let notes = formData.notes;
     
@@ -486,7 +486,7 @@ const WaterParameters: React.FC = () => {
                   }
                 >
                   {suggestions.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {suggestions.map((suggestion, index) => (
                         <div key={index} className={`p-2 rounded-md ${suggestion.type === 'warning' ? 'bg-orange-100' : 'bg-green-100'}`}>
                           <div className="flex items-start">
