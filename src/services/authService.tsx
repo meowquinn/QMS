@@ -14,37 +14,32 @@ interface LoginResponse {
   email?: string;
   phoneNumber?: string;
   sAddress?: string;   // Thêm field sAddress, optional
-  token: string; // Token trả về từ API
+
 }
 
 // Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await axios.post<LoginResponse>(`${API_URL}/auth/login`, 
-      { 
-        username, 
-        password // Đổi từ password sang sPassword
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+    const response = await axios.post(`${API_URL}/auth/login`, 
+      { username, password },
+      { headers: { 'Content-Type': 'application/json' } }
     );
-    
-    localStorage.setItem('token', response.data.token);
+
+    // Lấy staff từ response
+    const staff = response.data.staff;
+
     localStorage.setItem('user', JSON.stringify({
-      staffId: response.data.staffId,         // Cập nhật theo đúng tên trường
-      username: response.data.username,
-      fullName: response.data.fullName,       // Cập nhật theo đúng tên trường
-      sRole: response.data.sRole,             // Cập nhật theo đúng tên trường
-      access: response.data.access,
-      email: response.data.email,             // Thêm email
-      phoneNumber: response.data.phoneNumber, // Thêm phoneNumber
-      sAddress: response.data.sAddress        // Thêm sAddress
+      staffId: staff.staffId,
+      username: staff.username,
+      fullName: staff.fullName,
+      sRole: staff.sRole,
+      access: staff.access,
+      email: staff.email,
+      phoneNumber: staff.phoneNumber,
+      sAddress: staff.sAddress
     }));
- 
-    return response.data;
+
+    return staff; // trả về đúng kiểu LoginResponse
   } catch (error) {
     console.error('Lỗi đăng nhập:', error);
     throw new Error('Đăng nhập thất bại. Vui lòng kiểm tra tên đăng nhập và mật khẩu.');
@@ -53,13 +48,10 @@ export const login = async (username: string, password: string): Promise<LoginRe
 
 // Các hàm khác giữ nguyên
 export const logout = (): void => {
-  localStorage.removeItem('token');
   localStorage.removeItem('user');
 };
 
-export const isAuthenticated = (): boolean => {
-  return localStorage.getItem('token') !== null;
-};
+
 
 // Cập nhật interface cho user từ localStorage
 interface User {

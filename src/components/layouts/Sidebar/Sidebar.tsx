@@ -31,8 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const userData = user || { 
     fullName: "Chưa đăng nhập", 
     sRole: "Không có quyền",
-    email: "",
-    phoneNumber: ""
+    access: "guest"
   };
   
   // State để quản lý trạng thái đóng/mở của menu con
@@ -143,47 +142,47 @@ const Sidebar: React.FC<SidebarProps> = ({
     } else {
       // Fallback: xóa dữ liệu localStorage và chuyển đến trang đăng nhập
       localStorage.removeItem('user');
-      localStorage.removeItem('token');
       navigate('/login');
     }
   };
-
   return (
     <>
       {/* Overlay khi mở sidebar trên mobile */}
       {isMobile && isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity duration-300"
           onClick={handleOverlayClick}
         ></div>
       )}
 
-      <aside 
-        className={`bg-white text-gray-500 min-h-screen h-screen fixed flex flex-col shadow-lg transition-all duration-300 
-        ${isMobile 
-          ? `z-30 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} w-64` 
+
+      <aside
+        className={`bg-white text-gray-500 min-h-screen h-screen fixed flex flex-col shadow-lg transition-all duration-300
+        ${isMobile
+          ? `z-30 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} w-64`
           : `z-10 ${isCollapsed ? 'w-20' : 'w-64'}`
         }`}
       >
         {/* Header - cố định ở trên */}
         <div className="p-5 flex-shrink-0">
           {/* Tiêu đề có thể click để đóng/mở sidebar */}
-          <div 
+          <div
             onClick={toggleSidebar}
             className="cursor-pointer transition-colors hover:text-blue-500"
           >
             {(!isCollapsed || isMobile) ? (
               <h1 className="text-2xl font-bold">AquaMonitor</h1>
             ) : (
-              <h1 className="text-xl font-bold text-center">AQ</h1>
+              <h1 className="text-2xl font-bold text-center">AQ</h1>
             )}
           </div>
         </div>
 
+
         {/* Menu chính */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto px-5 max-h-[calc(100vh-130px)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500"
-          style={{ 
+          style={{
             scrollbarWidth: 'thin',
             scrollbarColor: 'rgb(209 213 219) rgb(243 244 246)',
             msOverflowStyle: '-ms-autohiding-scrollbar',
@@ -197,9 +196,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {item.subItems && (!isCollapsed || isMobile) ? (
                     <div>
                       <button
-                        className={`items-center text-left font-medium text-xs flex transition-all w-full p-2 rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
-                          location.pathname.startsWith(item.path) || hasActiveSubmenu(item) 
-                            ? 'bg-[#F2F2F2] font-bold text-blue-600' 
+                        className={`items-center text-left font-medium text-base flex transition-all w-full p-2 rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
+                          location.pathname.startsWith(item.path) || hasActiveSubmenu(item)
+                            ? 'bg-[#F2F2F2] font-bold text-blue-600'
                             : 'text-gray-500'
                         }`}
                         onClick={() => toggleSubMenu(item.id)}
@@ -218,9 +217,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <li key={subItem.id}>
                               <Link
                                 to={subItem.path}
-                                className={`flex font-normal w-full items-center p-2 text-xs rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
-                                  isActive(subItem.path) 
-                                    ? 'bg-[#F2F2F2] font-bold text-blue-600' 
+                                className={`flex font-normal w-full items-center p-2 text-base rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
+                                  isActive(subItem.path)
+                                    ? 'bg-[#F2F2F2] font-bold text-blue-600'
                                     : 'text-gray-500'
                                 }`}
                                 onClick={isMobile ? onClose : undefined}
@@ -237,9 +236,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <>
                       <Link
                         to={item.subItems && isCollapsed && !isMobile ? '#' : item.path}
-                        className={`flex text-xs font-medium ${isCollapsed && !isMobile ? 'justify-center' : 'items-center'} p-2 rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
-                          isActive(item.path) || (item.subItems && hasActiveSubmenu(item)) 
-                            ? 'bg-[#F2F2F2] font-bold text-blue-600' 
+                        className={`flex text-base font-medium ${isCollapsed && !isMobile ? 'justify-center' : 'items-center'} p-2 rounded-3xl hover:bg-[#F2F2F2] hover:text-blue-600 ${
+                          isActive(item.path) || (item.subItems && hasActiveSubmenu(item))
+                            ? 'bg-[#F2F2F2] font-bold text-blue-600'
                             : 'text-gray-500'
                         }`}
                         title={isCollapsed && !isMobile ? item.title : ''}
@@ -252,27 +251,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                         }}
                       >
                         {isCollapsed && !isMobile
-                          ? React.cloneElement(item.icon, { 
-                              className: `h-6 w-6 ${(isActive(item.path) || (item.subItems && hasActiveSubmenu(item))) ? 'text-blue-600' : 'text-gray-500'}` 
+                          ? React.cloneElement(item.icon, {
+                              className: `h-6 w-6 ${(isActive(item.path) || (item.subItems && hasActiveSubmenu(item))) ? 'text-blue-600' : 'text-gray-500'}`
                             })
                           : item.icon
                         }
                         {(!isCollapsed || isMobile) && <span className="ml-2">{item.title}</span>}
                       </Link>
-                      
+                     
                       {/* Dropdown menu khi sidebar thu gọn và nhấn vào icon */}
                       {isCollapsed && !isMobile && activeDropdown === item.id && item.subItems && (
-                        <div 
+                        <div
                           ref={dropdownRef}
                           className="absolute left-full top-0 ml-1 bg-white rounded-md shadow-lg p-2 w-48 z-50 max-h-[70vh] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
-                          style={{ 
+                          style={{
                             scrollbarWidth: 'thin',
                             scrollbarColor: 'rgb(209 213 219) rgb(243 244 246)',
                             msOverflowStyle: '-ms-autohiding-scrollbar',
                             WebkitOverflowScrolling: 'touch'
                           }}
                         >
-                          <div className="text-xs font-bold p-2 border-b border-gray-200 mb-1">
+                          <div className="text-base font-bold p-2 border-b border-gray-200 mb-1">
                             {item.title}
                           </div>
                           <ul>
@@ -280,7 +279,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               <li key={subItem.id}>
                                 <Link
                                   to={subItem.path}
-                                  className={`flex items-center p-2 text-xs rounded-md hover:bg-gray-100 ${
+                                  className={`flex items-center p-2 text-base rounded-md hover:bg-gray-100 ${
                                     isActive(subItem.path) ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600'
                                   }`}
                                   onClick={() => setActiveDropdown(null)}
@@ -300,7 +299,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </ul>
           </nav>
         </div>
-        
+       
         {/* Footer của sidebar - cập nhật để hiển thị thông tin từ API */}
         <div className={`border-t border-gray-200 flex-shrink-0 ${isCollapsed && !isMobile ? 'py-3' : 'p-3'}`}>
           {(!isCollapsed || isMobile) ? (
@@ -313,14 +312,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
                 <div className="ml-3 flex-1 min-w-0">
-                  <Tooltip title={userData.email || "Không có email"}>
-                    <p className="text-xs font-medium text-gray-700 truncate">{userData.fullName}</p>
+                  <Tooltip>
+                    <p className="text-sm font-medium text-gray-700 truncate">{userData.fullName}</p>
                   </Tooltip>
-                  <Tooltip title={userData.phoneNumber || "Không có số điện thoại"}>
-                    <p className="text-xs text-gray-500 truncate">{userData.sRole}</p>
+                  <Tooltip>
+                    <p className="text-sm text-gray-500 truncate">{userData.sRole}</p>
                   </Tooltip>
                 </div>
-                <button 
+                <button
                   onClick={handleLogout}
                   className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 hover:text-red-500 transition-colors"
                   title="Đăng xuất"
@@ -328,7 +327,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <FiLogOut className="h-4 w-4" />
                 </button>
               </div>
-              
+             
               {/* Phiên bản */}
               <p className="text-xs text-center text-gray-500">PoolQMS v1.0</p>
             </div>
@@ -342,16 +341,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
               </Tooltip>
-              
+             
               {/* Nút đăng xuất khi sidebar thu gọn */}
-              <button 
+              <button
                 onClick={handleLogout}
                 className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 hover:text-red-500 transition-colors"
                 title="Đăng xuất"
               >
                 <FiLogOut className="h-4 w-4" />
               </button>
-              
+             
               {/* Phiên bản */}
               <p className="text-xs text-center text-gray-500 mt-1">v1.0</p>
             </div>
@@ -361,5 +360,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
 
 export default Sidebar;

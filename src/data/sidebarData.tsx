@@ -1,13 +1,14 @@
 import  { type JSX } from 'react';
-import { 
-  FiHome, 
-  FiUsers, 
-  FiDatabase, 
-  FiBox, 
-  FiActivity, 
+import {
+  FiHome,
+  FiUsers,
+  FiDatabase,
+  FiBox,
+  FiActivity,
   FiClipboard,
-  FiFileText, 
+  FiFileText,
 } from 'react-icons/fi';
+
 
 // Định nghĩa kiểu dữ liệu cho menu item
 interface SubMenuItem {
@@ -16,6 +17,7 @@ interface SubMenuItem {
   path: string;
   icon: JSX.Element;
 }
+
 
 interface MenuItem {
   id: string;
@@ -26,58 +28,61 @@ interface MenuItem {
   adminOnly?: boolean;
 }
 
+
 const sidebarMenu: MenuItem[] = [
   {
     id: 'dashboard',
     title: 'Tổng quan',
     path: '/dashboard',
-    icon: <FiHome className="w-4 h-4" />,
+    icon: <FiHome className="w-5 h-5" />,
     adminOnly: false
   },
   {
     id: 'quality-tracking',
     title: 'Chất Lượng Nước',
     path: '/quality',
-    icon: <FiActivity className="w-4 h-4" />,
+    icon: <FiActivity className="w-5 h-5" />,
     adminOnly: false,
     subItems: [
       {
         id: 'quality-parameters',
         title: 'Nhập chỉ số',
         path: '/quality/parameters',
-        icon: <FiFileText className="w-4 h-4" />
+        icon: <FiFileText className="w-5 h-5" />
       },
       {
         id: 'quality-records',
         title: 'Lịch sử đo',
         path: '/quality/records',
-        icon: <FiClipboard className="w-4 h-4" />
+        icon: <FiClipboard className="w-5 h-5" />
       },
-      
+     
     ]
   },
   {
     id: 'pools',
     title: 'Hồ bơi',
     path: '/pools',
-    icon: <FiBox className="w-4 h-4" />,
+    icon: <FiBox className="w-5 h-5" />,
     adminOnly: false
   },
   {
     id: 'staff',
     title: 'Nhân viên',
     path: '/staff',
-    icon: <FiUsers className="w-4 h-4" />,
+    icon: <FiUsers className="w-5 h-5" />,
     adminOnly: true // Chỉ admin mới thấy quản lý nhân viên
   },
   {
     id: 'inventory',
     title: 'Kho',
     path: '/inventory',
-    icon: <FiDatabase className="w-4 h-4" />,
+    icon: <FiDatabase className="w-5 h-5" />,
     adminOnly: false
   },
-  
+ 
 ];
 
+
 export default sidebarMenu;
+
