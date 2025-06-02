@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography, message } from 'antd';
+import { Alert, Button, Form, Input, Select, DatePicker, Card, Typography, message, Switch } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import type { Moment } from 'moment';
 import moment from 'moment';
@@ -449,6 +449,28 @@ const WaterParameters: React.FC = () => {
                 {measurementStatus === 'warning' && "Cảnh báo"}
                 {measurementStatus === 'critical' && "Nguy hiểm"}
               </div>
+            </Form.Item>
+            
+            <Form.Item label="Cần xử lý">
+              <Switch
+                checked={formData.needsAction}
+                onChange={(checked) => handleInputChange('needsAction', checked)}
+                disabled={submitting || measurementStatus !== 'normal'} // Disable nếu trạng thái không phải normal
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {formData.needsAction ? 'Cần xử lý' : 'Không cần xử lý'}
+              </span>
+            </Form.Item>
+            
+            <Form.Item label="Đã giải quyết">
+              <Switch
+                checked={formData.resolved}
+                onChange={(checked) => handleInputChange('resolved', checked)}
+                disabled={submitting}
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {formData.resolved ? 'Đã giải quyết' : 'Chưa giải quyết'}
+              </span>
             </Form.Item>
             
             {/* Hiển thị gợi ý hóa chất khi có nhập dữ liệu */}
