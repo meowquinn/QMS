@@ -4,6 +4,8 @@ import Sidebar from '../Sidebar/Sidebar';
 import { VscMenu } from "react-icons/vsc";
 import { useAuth } from '../../../contexts/AuthContext';
 
+
+
 const MainLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

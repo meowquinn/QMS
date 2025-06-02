@@ -40,7 +40,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           access: response.access,
           email: response.email,
           phoneNumber: response.phoneNumber,
-          sAddress: response.sAddress, // ✅ thêm nếu có
+          sAddress: response.sAddress, // 
         };
 
         // Lưu vào localStorage (nếu authService chưa lưu)

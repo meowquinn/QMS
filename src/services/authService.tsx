@@ -6,15 +6,15 @@ const API_URL = 'https://localhost:7021/api';
 
 // Interface cho dữ liệu đăng nhập trả về
 interface LoginResponse {
-  staffId: number;  // Đổi từ id sang staffId theo SQL
+  staffId: number;
   username: string;
-  fullName: string;  // Đổi từ name sang fullName
-  sRole: string;     // Đổi từ role sang sRole
+  fullName: string; 
+  sRole: string;
   access: string;
-  token: string;
-  email: string;     // Thêm field email
-  phoneNumber: string; // Thêm field phoneNumber
+  email?: string;
+  phoneNumber?: string;
   sAddress?: string;   // Thêm field sAddress, optional
+  token: string; // Token trả về từ API
 }
 
 // Hàm đăng nhập - cập nhật để phù hợp với tên trường trong DB
