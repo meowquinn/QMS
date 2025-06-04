@@ -132,7 +132,7 @@ const WaterQualityRecords: React.FC = () => {
       setRecords(prevRecords => 
         prevRecords.map(record => 
           record.parameterId === parameterId 
-            ? { ...record, resolved: true, notes: updatedNotes } 
+            ? { ...record, resolved: true, needsAction: false, notes: updatedNotes } 
             : record
         )
       );
@@ -160,8 +160,8 @@ const WaterQualityRecords: React.FC = () => {
 
   // Định dạng giá trị pH để hiển thị với màu sắc phù hợp
   const renderPHValue = (value: number) => {
-    const status = checkPHStatus(value);
-    const color = status === 'normal' ? 'green' : (status === 'high' ? 'red' : 'orange');
+    const rStatus = checkPHStatus(value);
+    const color = rStatus === 'normal' ? 'green' : (status === 'high' ? 'red' : 'orange');
     
     return (
       <span style={{ color, fontWeight: status !== 'normal' ? 'bold' : 'normal' }}>
@@ -234,14 +234,9 @@ const WaterQualityRecords: React.FC = () => {
       title: 'Trạng thái',
       key: 'status',
       render: (_, record) => {
-        if (!record.needsAction) {
-          return <Tag color="green" icon={<CheckCircleOutlined />}>Bình thường</Tag>;
-        }
-
         let color = '';
         let text = '';
         let icon = null;
-        
         switch(record.rStatus) {
           case 'normal':
             color = 'green';
@@ -258,8 +253,10 @@ const WaterQualityRecords: React.FC = () => {
             text = 'Nguy hiểm';
             icon = <AlertOutlined />;
             break;
+          default:
+            color = 'default';
+            text = 'Không xác định';
         }
-        
         return (
           <Tag color={color} icon={icon}>
             {text}
