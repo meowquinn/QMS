@@ -9,8 +9,6 @@ import { addWaterQualityParameter } from '../../services/waterQualityService';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Pool } from '../../services/types';
 
-// Import User interface từ authService để TypeScript nhận diện đúng kiểu dữ liệu
-import { getCurrentUser } from '../../services/authService';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -43,20 +41,6 @@ interface WaterParameterFormData {
   needsAction: boolean;
 }
 
-// Interface dữ liệu gửi đến API theo cấu trúc bảng mới
-interface WaterQualitySubmitData {
-  poolId: number;
-  poolName: string;
-  pTimestamp: Date;
-  temperatureC: number;
-  pHLevel: number;
-  chlorineMgPerL: number;
-  notes: string;
-  createdBy?: string; // Changed from createdById to createdBy as per the table structure
-  rStatus: string;
-  resolved: boolean;
-  needsAction: boolean;
-}
 
 const WaterParameters: React.FC = () => {
   const navigate = useNavigate();
@@ -277,24 +261,26 @@ const WaterParameters: React.FC = () => {
       // Tính toán trạng thái dựa trên các giá trị đo lường
       const status = calculateStatus();
       const statusString = getStatusString(status);
-      
-      // Lấy thông tin người tạo
-      const currentUser = user || getCurrentUser();
-      const createdBy = currentUser?.fullName || currentUser?.username || 'Unknown';
-      
+            
       // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
-      const waterQualityData: WaterQualitySubmitData = {
-        poolId: parseInt(formData.poolId),
+      const waterQualityData = {
+        poolId: Number(formData.poolId),
         poolName: selectedPool.poolName,
-        pTimestamp: formData.timestamp as Date,
-        temperatureC: formData.temperature as number,
-        pHLevel: formData.pH as number,
-        chlorineMgPerL: formData.chlorine as number,
-        notes: formData.notes,
-        createdBy: createdBy, // Thay đổi từ createdById sang createdBy và sử dụng tên người dùng
-        rStatus: statusString, // Trạng thái được chuyển đổi thành chuỗi
-        resolved: formData.resolved,
-        needsAction: formData.needsAction
+        pTimestamp: formData.timestamp ? new Date(formData.timestamp) : new Date(),
+        temperatureC: Number(formData.temperature),
+        pHLevel: Number(formData.pH),
+        chlorineMgPerL: Number(formData.chlorine),
+        notes: formData.notes?.trim() || "",
+        createdBy: user
+          ? {
+              staffId: user.staffId,         // Lấy từ context hoặc state
+              fullName: user.fullName,       // Lấy từ context hoặc state
+              // Có thể bổ sung các trường khác nếu backend yêu cầu
+            }
+          : undefined,
+        rStatus: statusString,
+        resolved: Boolean(formData.resolved),
+        needsAction: Boolean(formData.needsAction),
       };
       
       console.log('Submitting data:', waterQualityData);
