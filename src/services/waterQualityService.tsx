@@ -103,17 +103,18 @@ export const getWaterQualityDetail = async (parameterId: number) => {
   }
 };
 
+
 /**
- * Cập nhật ghi chú cho bản ghi
+ * Cập nhật trạng thái đã xử lý cho bản ghi
  */
-export const updateWaterQualityNotes = async (parameterId: number, notes: string) => {
+export const updateWaterQualityResolved = async (parameterId: number, resolved: boolean) => {
   try {
-    const response = await api.patch(`/WaterQualityParameters/${parameterId}/notes`, {
-      notes
+    const response = await api.patch(`/WaterQualityParameters/${parameterId}/resolved`, {
+      resolved
     });
     return response.data;
   } catch (error) {
-    console.error('Không thể cập nhật ghi chú cho bản ghi:', error);
+    console.error('Không thể cập nhật trạng thái đã xử lý cho bản ghi:', error);
     throw error;
   }
 };

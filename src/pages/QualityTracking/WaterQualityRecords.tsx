@@ -5,7 +5,7 @@ import {
   InfoCircleOutlined, WarningOutlined, AlertOutlined, 
   CheckCircleOutlined
 } from '@ant-design/icons';
-import { getWaterQualityHistory, updateWaterQualityNotes } from '../../services/waterQualityService';
+import { getWaterQualityHistory, updateWaterQualityResolved } from '../../services/waterQualityService';
 import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool } from '../../services/types';
@@ -129,37 +129,22 @@ const WaterQualityRecords: React.FC = () => {
   // Xử lý đánh dấu đã xử lý
   const handleResolveIssue = async (parameterId: number) => {
     try {
-      const recordToUpdate = records.find(r => r.parameterId === parameterId);
-      if (!recordToUpdate) return;
+      // Gọi API cập nhật trạng thái đã xử lý
+      await updateWaterQualityResolved(parameterId, true);
 
-      const updatedNotes = recordToUpdate.notes 
-        ? `${recordToUpdate.notes}\n[${new Date().toLocaleString()}] Đã xử lý vấn đề.` 
-        : `[${new Date().toLocaleString()}] Đã xử lý vấn đề.`;
+      // (Có thể cập nhật lại notes nếu muốn)
+      // await updateWaterQualityNotes(parameterId, updatedNotes);
 
-      await updateWaterQualityNotes(parameterId, updatedNotes);
-
-      // Cập nhật records và filteredRecords
-      setRecords(prevRecords => {
-        const newRecords = prevRecords.map(record => 
-          record.parameterId === parameterId 
-            ? { ...record, resolved: true, needsAction: false, notes: updatedNotes } 
+      // Cập nhật lại state records như bạn đã làm
+      setRecords(prevRecords =>
+        prevRecords.map(record =>
+          record.parameterId === parameterId
+            ? { ...record, resolved: true, needsAction: false }
             : record
-        );
-        // Cập nhật filteredRecords ngay sau khi records thay đổi
-        let result = [...newRecords];
-        if (selectedStatus !== 'all') {
-          result = result.filter(record => record.rStatus === selectedStatus);
-        }
-        if (showOnlyExceeded) {
-          result = result.filter(record => record.needsAction);
-        }
-        setFilteredRecords(result);
-        return newRecords;
-      });
-
+        )
+      );
       message.success('Đã đánh dấu bản ghi là đã xử lý');
-    } catch (error) {
-      console.error('Lỗi khi cập nhật trạng thái:', error);
+    } catch {
       message.error('Không thể cập nhật trạng thái bản ghi');
     }
   };
