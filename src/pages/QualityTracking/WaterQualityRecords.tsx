@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import { getWaterQualityHistory, updateWaterQualityNotes } from '../../services/waterQualityService';
 import { getAllPools } from '../../services/poolService';
+import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool } from '../../services/types';
 
 const { Option } = Select;
@@ -38,6 +39,7 @@ const WaterQualityRecords: React.FC = () => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [showOnlyExceeded, setShowOnlyExceeded] = useState<boolean>(false);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [staffMap, setStaffMap] = useState<Record<number, string>>({});
   
   // Ngưỡng tiêu chuẩn cho các thông số
   const standards = {
@@ -96,6 +98,17 @@ const WaterQualityRecords: React.FC = () => {
     fetchWaterQualityData();
   }, [selectedPool, dateRange]);
 
+  // Lấy danh sách nhân viên và tạo map staffId -> fullName
+  useEffect(() => {
+    getAllStaff().then((staffList: Array<{ staffId: number; fullName: string }>) => {
+      const map: Record<number, string> = {};
+      staffList.forEach((staff: { staffId: number; fullName: string }) => {
+        map[staff.staffId] = staff.fullName;
+      });
+      setStaffMap(map);
+    });
+  }, []);
+
   // Áp dụng bộ lọc trạng thái và lọc vượt ngưỡng trên dữ liệu client
   useEffect(() => {
     let result = [...records];
@@ -116,19 +129,15 @@ const WaterQualityRecords: React.FC = () => {
   // Xử lý đánh dấu đã xử lý
   const handleResolveIssue = async (parameterId: number) => {
     try {
-      // Tìm bản ghi cần cập nhật để lấy ghi chú hiện tại
       const recordToUpdate = records.find(r => r.parameterId === parameterId);
       if (!recordToUpdate) return;
 
-      // Thêm ghi chú về việc đã xử lý
       const updatedNotes = recordToUpdate.notes 
         ? `${recordToUpdate.notes}\n[${new Date().toLocaleString()}] Đã xử lý vấn đề.` 
         : `[${new Date().toLocaleString()}] Đã xử lý vấn đề.`;
 
-      // Gọi API để cập nhật ghi chú
       await updateWaterQualityNotes(parameterId, updatedNotes);
 
-      // Cập nhật state cục bộ
       setRecords(prevRecords => 
         prevRecords.map(record => 
           record.parameterId === parameterId 
@@ -277,7 +286,8 @@ const WaterQualityRecords: React.FC = () => {
     {
       title: 'Người đo',
       key: 'createdBy',
-      render: (_, record) => record.createdBy ?? 'Không xác định',
+      render: (_, record) =>
+        staffMap[record.createdBy ?? 0] || record.createdBy || 'Không xác định',
     },
     {
       title: 'Xử lý',

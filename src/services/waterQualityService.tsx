@@ -59,18 +59,19 @@ export const getWaterQualityHistory = async (filters?: {
       // Tính toán trạng thái dựa trên thông số
       const isPhNormal = reading.pHLevel >= 7.0 && reading.pHLevel <= 7.6;
       const isChlorineNormal = reading.chlorineMgPerL >= 0.5 && reading.chlorineMgPerL <= 3.0;
-      
-      let status: 'normal' | 'warning' | 'critical' = 'normal';
+
+      let rStatus: 'normal' | 'warning' | 'critical' = 'normal';
       if (!isPhNormal || !isChlorineNormal) {
-        status = 'warning';
+        rStatus = 'warning';
       }
-      
+      // Nếu có điều kiện critical thì bổ sung ở đây
+
       return {
         ...reading,
         pTimestamp: new Date(reading.pTimestamp),
-        status,
-        resolved: status === 'normal',
-        needsAction: status !== 'normal'
+        rStatus, // Gán đúng trường này!
+        resolved: rStatus === 'normal',
+        needsAction: rStatus !== 'normal'
       };
     });
     
