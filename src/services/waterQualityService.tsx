@@ -73,7 +73,6 @@ export const getWaterQualityHistory = async (filters?: {
       return {
         ...reading,
         pTimestamp: new Date(reading.pTimestamp),
-        rStatus,
         resolved: reading.resolved,
         needsAction: !reading.resolved && rStatus !== 'normal'
       };
