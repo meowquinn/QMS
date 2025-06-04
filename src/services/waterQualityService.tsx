@@ -109,7 +109,7 @@ export const getWaterQualityDetail = async (parameterId: number) => {
  */
 export const updateWaterQualityResolved = async (parameterId: number, resolved: boolean) => {
   try {
-    const response = await api.patch(`/WaterQualityParameters/${parameterId}/resolved`, {
+    const response = await api.patch(`/WaterQualityParameters/${parameterId}/resolve`, {
       resolved
     });
     return response.data;
