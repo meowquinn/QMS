@@ -138,13 +138,24 @@ const WaterQualityRecords: React.FC = () => {
 
       await updateWaterQualityNotes(parameterId, updatedNotes);
 
-      setRecords(prevRecords => 
-        prevRecords.map(record => 
+      // Cập nhật records và filteredRecords
+      setRecords(prevRecords => {
+        const newRecords = prevRecords.map(record => 
           record.parameterId === parameterId 
             ? { ...record, resolved: true, needsAction: false, notes: updatedNotes } 
             : record
-        )
-      );
+        );
+        // Cập nhật filteredRecords ngay sau khi records thay đổi
+        let result = [...newRecords];
+        if (selectedStatus !== 'all') {
+          result = result.filter(record => record.rStatus === selectedStatus);
+        }
+        if (showOnlyExceeded) {
+          result = result.filter(record => record.needsAction);
+        }
+        setFilteredRecords(result);
+        return newRecords;
+      });
 
       message.success('Đã đánh dấu bản ghi là đã xử lý');
     } catch (error) {
@@ -347,7 +358,7 @@ const WaterQualityRecords: React.FC = () => {
         {unresolvedCount > 0 && (
           <Badge count={unresolvedCount} overflowCount={99}>
             <Tag color="red" icon={<AlertOutlined />}>
-              Có {unresolvedCount} chỉ số cần xử lý
+              Có {unresolvedCount} trạng thái cần xử lý
             </Tag>
           </Badge>
         )}
