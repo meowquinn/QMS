@@ -2,19 +2,17 @@ import api from './api';
 
 // Cập nhật interface theo đúng cấu trúc bảng WaterQualityParameters
 export interface WaterQualityParameter {
-  parameterId?: number;
-  // poolId: number; // <-- XÓA DÒNG NÀY nếu không cần
+  parameterId: number;
   poolName: string;
   pTimestamp: Date;
   temperatureC: number;
   pHLevel: number;
   chlorineMgPerL: number;
   notes: string;
-  createdAt?: Date;
-  createdById?: number;
-  status?: 'normal' | 'warning' | 'critical';
-  resolved?: boolean;
-  needsAction?: boolean;
+  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  rStatus: string;
+  resolved: boolean;
+  needsAction: boolean;
 }
 
 // Khi gọi hàm addWaterQualityParameter:
@@ -82,7 +80,6 @@ export const getWaterQualityHistory = async (filters?: {
       return {
         ...reading,
         pTimestamp: new Date(reading.pTimestamp),
-        createdAt: reading.createdAt ? new Date(reading.createdAt) : undefined,
         status,
         resolved: status === 'normal',
         needsAction: status !== 'normal'
