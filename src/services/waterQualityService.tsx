@@ -15,19 +15,6 @@ export interface WaterQualityParameter {
   needsAction: boolean;
 }
 
-// Khi gọi hàm addWaterQualityParameter:
-// const waterQualityData = {
-//   poolName: selectedPool.poolName,
-//   pTimestamp: formData.timestamp as Date,
-//   temperatureC: formData.temperature as number,
-//   pHLevel: formData.pH as number,
-//   chlorineMgPerL: formData.chlorine as number,
-//   notes: formData.notes,
-//   // ...các trường khác nếu cần
-// };
-
-// await addWaterQualityParameter(waterQualityData);
-
 /**
  * Thêm một bản ghi đo chất lượng nước mới
  */
