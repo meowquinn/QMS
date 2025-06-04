@@ -33,7 +33,7 @@ interface ChemicalSuggestion {
 
 // Cập nhật interface form data để phù hợp với bảng WaterQualityParameters
 interface WaterParameterFormData {
-  poolId: string;
+  poolName: string;
   timestamp: Date | null;
   temperature: number | null;
   pH: number | null;
@@ -45,7 +45,6 @@ interface WaterParameterFormData {
 
 // Interface dữ liệu gửi đến API theo cấu trúc bảng mới
 interface WaterQualitySubmitData {
-  poolId: number;
   poolName: string;
   pTimestamp: Date;
   temperatureC: number;
@@ -63,7 +62,7 @@ const WaterParameters: React.FC = () => {
   const { user } = useAuth();
   
   const [formData, setFormData] = useState<WaterParameterFormData>({
-    poolId: '',
+    poolName: '',
     timestamp: null,
     temperature: null,
     pH: null,
@@ -258,7 +257,7 @@ const WaterParameters: React.FC = () => {
       setSubmitting(true);
       
       // Validate required fields
-      if (!formData.poolId || !formData.timestamp || 
+      if (!formData.poolName || !formData.timestamp || 
           formData.pH === null || formData.chlorine === null || formData.temperature === null) {
         message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
         setSubmitting(false);
@@ -266,7 +265,7 @@ const WaterParameters: React.FC = () => {
       }
       
       // Tìm thông tin hồ bơi từ danh sách
-      const selectedPool = pools.find(pool => pool.poolsId.toString() === formData.poolId);
+      const selectedPool = pools.find(pool => pool.poolsId.toString() === formData.poolName);
       
       if (!selectedPool) {
         message.error('Không tìm thấy thông tin hồ bơi');
@@ -289,14 +288,13 @@ const WaterParameters: React.FC = () => {
       
       // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
       const waterQualityData: WaterQualitySubmitData = {
-        poolId: parseInt(formData.poolId),
         poolName: selectedPool.poolName,
         pTimestamp: formData.timestamp as Date,
         temperatureC: formData.temperature as number,
         pHLevel: formData.pH as number,
         chlorineMgPerL: formData.chlorine as number,
         notes: formData.notes,
-        createdBy: createdBy.fullName, // Chỉ truyền tên người tạo (string)
+        createdBy: createdBy.fullName, // hoặc object nếu backend yêu cầu
         rStatus: statusString,
         resolved: formData.resolved,
         needsAction: formData.needsAction,
@@ -315,7 +313,7 @@ const WaterParameters: React.FC = () => {
       setTimeout(() => {
         setSubmitted(false);
         setFormData({
-          poolId: '',
+          poolName: '',
           timestamp: null,
           temperature: null,
           pH: null,
@@ -356,8 +354,8 @@ const WaterParameters: React.FC = () => {
             <Form.Item label="Hồ bơi" required>
               <Select
                 placeholder="Chọn hồ bơi"
-                value={formData.poolId || undefined}
-                onChange={(value: string) => handleInputChange('poolId', value)}
+                value={formData.poolName || undefined}
+                onChange={(value: string) => handleInputChange('poolName', value)}
                 className="w-full"
                 loading={loading}
                 disabled={loading || submitting}

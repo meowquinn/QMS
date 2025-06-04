@@ -2,20 +2,33 @@ import api from './api';
 
 // Cập nhật interface theo đúng cấu trúc bảng WaterQualityParameters
 export interface WaterQualityParameter {
-  parameterId?: number; // Tự động tăng trong DB
-  poolId: number; // Thay đổi từ string sang number
+  parameterId?: number;
+  // poolId: number; // <-- XÓA DÒNG NÀY nếu không cần
   poolName: string;
-  pTimestamp: Date; // Đổi từ timestamp sang pTimestamp
-  temperatureC: number; // Đổi từ temperatureValue sang temperatureC
-  pHLevel: number; // Đổi từ pHValue sang pHLevel
-  chlorineMgPerL: number; // Đổi từ chlorineValue sang chlorineMgPerL
+  pTimestamp: Date;
+  temperatureC: number;
+  pHLevel: number;
+  chlorineMgPerL: number;
   notes: string;
-  createdAt?: Date; // Thêm trường mới, optional vì sẽ tự động tạo trong DB
-  createdById?: number; // Thêm trường mới, optional vì có thể null
+  createdAt?: Date;
+  createdById?: number;
   status?: 'normal' | 'warning' | 'critical';
   resolved?: boolean;
   needsAction?: boolean;
 }
+
+// Khi gọi hàm addWaterQualityParameter:
+// const waterQualityData = {
+//   poolName: selectedPool.poolName,
+//   pTimestamp: formData.timestamp as Date,
+//   temperatureC: formData.temperature as number,
+//   pHLevel: formData.pH as number,
+//   chlorineMgPerL: formData.chlorine as number,
+//   notes: formData.notes,
+//   // ...các trường khác nếu cần
+// };
+
+// await addWaterQualityParameter(waterQualityData);
 
 /**
  * Thêm một bản ghi đo chất lượng nước mới
@@ -40,7 +53,7 @@ export const addWaterQualityParameter = async (parameterData: Omit<WaterQualityP
  * Lấy lịch sử đo chất lượng nước
  */
 export const getWaterQualityHistory = async (filters?: {
-  poolId?: number;
+  poolName?: string;
   startDate?: Date;
   endDate?: Date;
   createdById?: number;
@@ -48,7 +61,7 @@ export const getWaterQualityHistory = async (filters?: {
   try {
     // Xây dựng query parameters
     const params: Record<string, string> = {};
-    if (filters?.poolId) params.poolId = filters.poolId.toString();
+    if (filters?.poolName) params.poolName = filters.poolName;
     if (filters?.startDate) params.startDate = filters.startDate.toISOString();
     if (filters?.endDate) params.endDate = filters.endDate.toISOString();
     if (filters?.createdById) params.createdById = filters.createdById.toString();

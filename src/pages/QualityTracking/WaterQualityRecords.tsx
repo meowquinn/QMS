@@ -18,7 +18,6 @@ type MeasurementStatus = 'normal' | 'warning' | 'critical';
 // Định nghĩa kiểu dữ liệu cho bản ghi đo chất lượng nước
 interface WaterQualityRecord {
   parameterId: number;
-  poolId: number;
   poolName: string;
   pHLevel: number;
   chlorineMgPerL: number;
