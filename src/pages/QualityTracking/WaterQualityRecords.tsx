@@ -289,15 +289,23 @@ const WaterQualityRecords: React.FC = () => {
       title: 'Xử lý',
       key: 'resolution',
       render: (_, record) => {
-        if (!record.needsAction) {
-          return <span>-</span>;
+        if (record.resolved) {
+          return (
+            <Badge 
+              status="success"
+              text="Đã xử lý"
+            />
+          );
         }
-        return (
-          <Badge 
-            status={record.resolved ? 'success' : 'processing'} 
-            text={record.resolved ? 'Đã xử lý' : 'Chưa xử lý'} 
-          />
-        );
+        if (record.needsAction) {
+          return (
+            <Badge 
+              status="processing"
+              text="Chưa xử lý"
+            />
+          );
+        }
+        return <span>-</span>;
       },
     },
     {

@@ -69,9 +69,9 @@ export const getWaterQualityHistory = async (filters?: {
       return {
         ...reading,
         pTimestamp: new Date(reading.pTimestamp),
-        rStatus, // Gán đúng trường này!
-        resolved: rStatus === 'normal',
-        needsAction: rStatus !== 'normal'
+        rStatus,
+        resolved: reading.resolved,
+        needsAction: !reading.resolved && rStatus !== 'normal'
       };
     });
     
