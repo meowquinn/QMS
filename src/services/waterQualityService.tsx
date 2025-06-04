@@ -9,7 +9,7 @@ export interface WaterQualityParameter {
   pHLevel: number;
   chlorineMgPerL: number;
   notes: string;
-  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  createdBy?: number; // staffId
   rStatus: string;
   resolved: boolean;
   needsAction: boolean;
@@ -36,7 +36,8 @@ export const addWaterQualityParameter = async (parameterData: Omit<WaterQualityP
     // Gửi pTimestamp dưới dạng chuỗi ISO để API xử lý
     const dataToSend = {
       ...parameterData,
-      pTimestamp: parameterData.pTimestamp.toISOString()
+      pTimestamp: parameterData.pTimestamp.toISOString(),
+      createdBy: parameterData.createdBy // staffId
     };
     
     const response = await api.post('WaterQualityParameters', dataToSend);

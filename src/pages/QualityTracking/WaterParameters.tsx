@@ -51,7 +51,7 @@ interface WaterQualitySubmitData {
   pHLevel: number;
   chlorineMgPerL: number;
   notes: string;
-  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  createdBy?: number; // Đổi sang number (staffId)
   rStatus: string;
   resolved: boolean;
   needsAction: boolean;
@@ -276,9 +276,9 @@ const WaterParameters: React.FC = () => {
       const status = calculateStatus();
       const statusString = getStatusString(status);
 
-      // Lấy fullName của user
+      // Lấy staffId của user
       const currentUser = user || getCurrentUser();
-      const createdBy = currentUser?.fullName || "Unknown";
+      const createdBy = currentUser?.staffId;
 
       // Tạo dữ liệu gửi API
       const waterQualityData: WaterQualitySubmitData = {
@@ -288,7 +288,7 @@ const WaterParameters: React.FC = () => {
         pHLevel: formData.pH as number,
         chlorineMgPerL: formData.chlorine as number,
         notes: formData.notes,
-        createdBy, // chỉ là fullName
+        createdBy, // staffId
         rStatus: statusString,
         resolved: formData.resolved,
         needsAction: formData.needsAction,

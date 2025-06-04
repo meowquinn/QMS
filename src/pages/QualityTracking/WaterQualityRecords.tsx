@@ -23,7 +23,7 @@ interface WaterQualityRecord {
   pHLevel: number;
   chlorineMgPerL: number;
   notes: string;
-  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  createdBy?: number; // Đổi sang number (staffId)
   rStatus: string;
   resolved: boolean;
   needsAction: boolean;
@@ -280,7 +280,7 @@ const WaterQualityRecords: React.FC = () => {
     {
       title: 'Người đo',
       key: 'createdBy',
-      render: (_, record) => record.createdBy || 'Không xác định',
+      render: (_, record) => record.createdBy ?? 'Không xác định',
     },
     {
       title: 'Xử lý',
