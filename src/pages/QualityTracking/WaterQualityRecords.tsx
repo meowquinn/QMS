@@ -13,21 +13,19 @@ const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 // Define measurement status
-type MeasurementStatus = 'normal' | 'warning' | 'critical';
 
 // Định nghĩa kiểu dữ liệu cho bản ghi đo chất lượng nước
 interface WaterQualityRecord {
   parameterId: number;
   poolName: string;
+  pTimestamp: Date;
+  temperatureC: number;
   pHLevel: number;
   chlorineMgPerL: number;
-  temperatureC: number;
-  pTimestamp: Date;
-  status: MeasurementStatus;
-  createdById?: number;
-  createdByName?: string;
+  notes: string;
+  createdBy?: string; // Changed from createdById to createdBy as per the table structure
+  rStatus: string;
   resolved: boolean;
-  notes?: string;
   needsAction: boolean;
 }
 
@@ -104,7 +102,7 @@ const WaterQualityRecords: React.FC = () => {
     
     // Lọc theo trạng thái
     if (selectedStatus !== 'all') {
-      result = result.filter(record => record.status === selectedStatus);
+      result = result.filter(record => record.rStatus === selectedStatus);
     }
     
     // Lọc để chỉ hiển thị các giá trị vượt ngưỡng nếu được chọn
@@ -244,7 +242,7 @@ const WaterQualityRecords: React.FC = () => {
         let text = '';
         let icon = null;
         
-        switch(record.status) {
+        switch(record.rStatus) {
           case 'normal':
             color = 'green';
             text = 'Bình thường';
@@ -281,8 +279,8 @@ const WaterQualityRecords: React.FC = () => {
     },
     {
       title: 'Người đo',
-      key: 'createdByName',
-      render: (_, record) => record.createdByName || 'Không xác định',
+      key: 'createdBy',
+      render: (_, record) => record.createdBy || 'Không xác định',
     },
     {
       title: 'Xử lý',

@@ -255,7 +255,7 @@ const WaterParameters: React.FC = () => {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      
+
       // Validate required fields
       if (!formData.poolName || !formData.timestamp || 
           formData.pH === null || formData.chlorine === null || formData.temperature === null) {
@@ -263,30 +263,24 @@ const WaterParameters: React.FC = () => {
         setSubmitting(false);
         return;
       }
-      
-      // Tìm thông tin hồ bơi từ danh sách
+
+      // Lấy poolName từ danh sách pools (nếu cần xác thực)
       const selectedPool = pools.find(pool => pool.poolsId.toString() === formData.poolName);
-      
       if (!selectedPool) {
         message.error('Không tìm thấy thông tin hồ bơi');
         setSubmitting(false);
         return;
       }
-      
-      // Tính toán trạng thái dựa trên các giá trị đo lường
+
+      // Tính toán trạng thái
       const status = calculateStatus();
       const statusString = getStatusString(status);
-      
-      // Lấy thông tin người tạo
+
+      // Lấy fullName của user
       const currentUser = user || getCurrentUser();
-      const createdBy = currentUser
-        ? {
-            staffId: currentUser.staffId,
-            fullName: currentUser.fullName,
-          }
-        : { staffId: 0, fullName: "Unknown" };
-      
-      // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
+      const createdBy = currentUser?.fullName || "Unknown";
+
+      // Tạo dữ liệu gửi API
       const waterQualityData: WaterQualitySubmitData = {
         poolName: selectedPool.poolName,
         pTimestamp: formData.timestamp as Date,
@@ -294,22 +288,19 @@ const WaterParameters: React.FC = () => {
         pHLevel: formData.pH as number,
         chlorineMgPerL: formData.chlorine as number,
         notes: formData.notes,
-        createdBy: createdBy.fullName, // hoặc object nếu backend yêu cầu
+        createdBy, // chỉ là fullName
         rStatus: statusString,
         resolved: formData.resolved,
         needsAction: formData.needsAction,
       };
-      
-      console.log('Submitting data:', waterQualityData);
-      
-      // Gọi API để lưu dữ liệu vào database
+
+      // Gọi API lưu dữ liệu
       await addWaterQualityParameter(waterQualityData);
-      
+
       setSubmitting(false);
       setSubmitted(true);
       message.success('Đã lưu thông số nước thành công!');
-      
-      // Đợi một chút rồi reset form và redirect
+
       setTimeout(() => {
         setSubmitted(false);
         setFormData({
@@ -323,8 +314,6 @@ const WaterParameters: React.FC = () => {
           needsAction: true,
         });
         setSuggestions([]);
-        
-        // Chuyển hướng đến trang lịch sử đo
         navigate('/quality/records');
       }, 2000);
     } catch (error) {
