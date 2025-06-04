@@ -60,12 +60,28 @@ export const getWaterQualityHistory = async (filters?: {
     
     // Chuyển đổi chuỗi timestamp thành đối tượng Date và thêm các trường status, resolved, needsAction
     const readings = response.data.map((reading: WaterQualityParameter) => {
+      // Tính toán trạng thái dựa trên thông số
+      const isPhNormal = reading.pHLevel >= 7.0 && reading.pHLevel <= 7.6;
+      const isChlorineNormal = reading.chlorineMgPerL >= 0.5 && reading.chlorineMgPerL <= 3.0;
+
+      let rStatus: 'normal' | 'warning' | 'critical' = 'normal';
+
+      // Điều kiện critical
+      if (
+        reading.pHLevel < 6.5 || reading.pHLevel > 8.0 ||
+        reading.chlorineMgPerL < 0.2 || reading.chlorineMgPerL > 5.0
+      ) {
+        rStatus = 'critical';
+      } else if (!isPhNormal || !isChlorineNormal) {
+        rStatus = 'warning';
+      }
+
       return {
         ...reading,
         pTimestamp: new Date(reading.pTimestamp),
-        rStatus: reading.rStatus,
+        rStatus,
         resolved: reading.resolved,
-        needsAction: !reading.resolved && reading.rStatus !== 'normal'
+        needsAction: !reading.resolved && rStatus !== 'normal'
       };
     });
     
