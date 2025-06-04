@@ -18,15 +18,6 @@ export const getAllPools = async () => {
 /**
  * Lấy thông tin chi tiết của một hồ bơi theo ID
  */
-export const getPoolById = async (poolId: number) => {
-  try {
-    const response = await api.get(`/Pools/${poolId}`);
-    return response.data;
-  } catch (error) {
-    console.error(error);
-    throw new Error('Không thể lấy thông tin hồ bơi');
-  }
-};
 
 /**
  * Tạo hồ bơi mới
