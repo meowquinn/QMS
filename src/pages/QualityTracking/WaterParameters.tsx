@@ -280,7 +280,7 @@ const WaterParameters: React.FC = () => {
       
       // Lấy thông tin người tạo
       const currentUser = user || getCurrentUser();
-      const createdBy = currentUser?.fullName || currentUser?.username || 'Unknown';
+      const createdBy = currentUser?.fullName || (currentUser?.staffId ? String(currentUser.staffId) : undefined) || 'Unknown';
       
       // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
       const waterQualityData: WaterQualitySubmitData = {
