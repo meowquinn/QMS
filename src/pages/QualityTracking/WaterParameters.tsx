@@ -280,7 +280,12 @@ const WaterParameters: React.FC = () => {
       
       // Lấy thông tin người tạo
       const currentUser = user || getCurrentUser();
-      const createdBy = currentUser?.fullName || (currentUser?.staffId ? String(currentUser.staffId) : undefined) || 'Unknown';
+      const createdBy = currentUser
+        ? {
+            staffId: currentUser.staffId,
+            fullName: currentUser.fullName,
+          }
+        : { staffId: 0, fullName: "Unknown" };
       
       // Tạo đối tượng dữ liệu theo cấu trúc bảng WaterQualityParameters
       const waterQualityData: WaterQualitySubmitData = {
@@ -291,10 +296,10 @@ const WaterParameters: React.FC = () => {
         pHLevel: formData.pH as number,
         chlorineMgPerL: formData.chlorine as number,
         notes: formData.notes,
-        createdBy: createdBy, // Thay đổi từ createdById sang createdBy và sử dụng tên người dùng
-        rStatus: statusString, // Trạng thái được chuyển đổi thành chuỗi
+        createdBy: createdBy.fullName, // Chỉ truyền tên người tạo (string)
+        rStatus: statusString,
         resolved: formData.resolved,
-        needsAction: formData.needsAction
+        needsAction: formData.needsAction,
       };
       
       console.log('Submitting data:', waterQualityData);
