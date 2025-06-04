@@ -20,10 +20,14 @@ export interface WaterQualityParameter {
  */
 export const addWaterQualityParameter = async (parameterData: Omit<WaterQualityParameter, 'parameterId' | 'createdAt'>) => {
   try {
-    // Gửi pTimestamp dưới dạng chuỗi ISO để API xử lý
+    // Định dạng pTimestamp thành local string 'YYYY-MM-DDTHH:mm:ss'
+    const d = parameterData.pTimestamp;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const localString = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
     const dataToSend = {
       ...parameterData,
-      pTimestamp: parameterData.pTimestamp.toISOString(),
+      pTimestamp: localString, // Gửi local time thay vì UTC
       createdBy: parameterData.createdBy // staffId
     };
     
