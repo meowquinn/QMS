@@ -16,10 +16,6 @@ export const getAllPools = async () => {
 };
 
 /**
- * Lấy thông tin chi tiết của một hồ bơi theo ID
- */
-
-/**
  * Tạo hồ bơi mới
  */
 export const createPool = async (poolData: Omit<Pool, 'poolId'>) => {

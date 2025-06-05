@@ -9,201 +9,52 @@ import {
   DeleteOutlined, ExclamationCircleOutlined
 } from '@ant-design/icons';
 
-// Định nghĩa các kiểu dữ liệu
-interface Chemical {
-  id: string;
-  name: string;
-  type: string;
-  currentStock: number;
-  unit: string;
-  minThreshold: number;
-  reorderLevel: number;
-  lastRestocked: Date;
-  description?: string;
-}
-
-interface AdjustmentRecord {
-  id: string;
-  chemicalId: string;
-  chemicalName: string;
-  poolId: string;
-  poolName: string;
-  amount: number;
-  unit: string;
-  adjustedBy: string;
-  note?: string;
-  timestamp: Date;
-  isRestock?: boolean; // Để phân biệt giữa sử dụng và nạp thêm
-}
-
-interface Pool {
-  id: string;
-  name: string;
-}
+import type { Pool, Chemical, AdjustmentRecord } from '../../services/types';
+import { 
+  addChemical, deleteChemical, restockChemical, applyChemical, 
+  getAllChemicals, getChemicalHistory 
+} from '../../services/chemicalService';
+import { getAllPools } from '../../services/poolService';
 
 const InventoryStock: React.FC = () => {
-  // State cho dữ liệu
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>('');
-  
-  // State cho modal
   const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isRestockModalVisible, setIsRestockModalVisible] = useState(false);
   const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
-  
-  // Form
   const [form] = Form.useForm();
-
-  // Tab active
   const [activeTab, setActiveTab] = useState<string>("inventory");
 
   // Tải dữ liệu hóa chất và hồ bơi
+  const reloadAll = async () => {
+    setLoading(true);
+    try {
+      const [chemRes, poolRes, historyRes] = await Promise.all([
+        getAllChemicals(),
+        getAllPools(),
+        getChemicalHistory()
+      ]);
+      setChemicals(chemRes.data);
+      setPools(poolRes.data);
+      setAdjustmentHistory(historyRes.data);
+    } catch (error) {
+      message.error('Không thể tải dữ liệu hóa chất hoặc lịch sử!');
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // Giả lập API call
-    setTimeout(() => {
-      const mockChemicals: Chemical[] = [
-        {
-          id: 1,  // Đổi từ "chem-1" sang 1
-          name: "Chlorine",
-          type: "Chất khử trùng",
-          currentStock: 75,
-          unit: "kg",
-          minThreshold: 20,
-          reorderLevel: 30,
-          lastRestocked: new Date(2025, 4, 10),
-          description: "Chất khử trùng chính để diệt khuẩn"
-        },
-        {
-          id: 2,  // Đổi từ "chem-2" sang 2
-          name: "Sodium Bicarbonate",
-          type: "Điều chỉnh pH",
-          currentStock: 45,
-          unit: "kg",
-          minThreshold: 15,
-          reorderLevel: 25,
-          lastRestocked: new Date(2025, 4, 8),
-          description: "Tăng độ pH và kiềm"
-        },
-        {
-          id: "chem-3",
-          name: "Muriatic Acid",
-          type: "Điều chỉnh pH",
-          currentStock: 18,
-          unit: "lít",
-          minThreshold: 10,
-          reorderLevel: 20,
-          lastRestocked: new Date(2025, 4, 12),
-          description: "Giảm độ pH"
-        },
-        {
-          id: "chem-4",
-          name: "Algaecide",
-          type: "Diệt tảo",
-          currentStock: 30,
-          unit: "lít",
-          minThreshold: 10,
-          reorderLevel: 15,
-          lastRestocked: new Date(2025, 4, 5),
-          description: "Ngăn ngừa và tiêu diệt tảo"
-        },
-        {
-          id: "chem-5",
-          name: "Calcium Chloride",
-          type: "Điều chỉnh độ cứng",
-          currentStock: 50,
-          unit: "kg",
-          minThreshold: 15,
-          reorderLevel: 25,
-          lastRestocked: new Date(2025, 4, 3),
-          description: "Tăng độ cứng của nước"
-        },
-        {
-          id: "chem-6",
-          name: "Clarifier",
-          type: "Làm trong nước",
-          currentStock: 5,
-          unit: "lít",
-          minThreshold: 5,
-          reorderLevel: 10,
-          lastRestocked: new Date(2025, 4, 1),
-          description: "Làm trong nước, loại bỏ các hạt lơ lửng"
-        }
-      ];
-
-      const mockPools: Pool[] = [
-        { id: "pool-1", name: "Hồ bơi chính" },
-        { id: "pool-2", name: "Hồ bơi trẻ em" },
-        { id: "pool-3", name: "Hồ bơi spa" }
-      ];
-
-      const mockAdjustmentHistory: AdjustmentRecord[] = [
-        {
-          id: "adj-1",
-          chemicalId: 1,  // Đổi từ "chem-1" sang 1
-          chemicalName: "Chlorine",
-          poolId: "pool-1",
-          poolName: "Hồ bơi chính",
-          amount: 2.5,
-          unit: "kg",
-          adjustedBy: "Nguyễn Văn A",
-          timestamp: new Date(2025, 4, 17, 9, 30),
-          note: "Điều chỉnh sau khi đo chỉ số thấp"
-        },
-        {
-          id: "rst-1",
-          chemicalId: 1,
-          chemicalName: "Chlorine",
-          poolId: "",
-          poolName: "",
-          amount: 25,
-          unit: "kg",
-          adjustedBy: "Trần Văn B",
-          timestamp: new Date(2025, 4, 10, 14, 0),
-          note: "Nạp thêm từ nhà cung cấp ABC",
-          isRestock: true
-        },
-        {
-          id: "adj-2",
-          chemicalId: "chem-3",
-          chemicalName: "Muriatic Acid",
-          poolId: "pool-2",
-          poolName: "Hồ bơi trẻ em",
-          amount: 1.2,
-          unit: "lít",
-          adjustedBy: "Trần Thị B",
-          timestamp: new Date(2025, 4, 16, 15, 0),
-          note: "pH quá cao, cần điều chỉnh"
-        },
-        {
-          id: "rst-2",
-          chemicalId: "chem-3",
-          chemicalName: "Muriatic Acid",
-          poolId: "",
-          poolName: "",
-          amount: 10,
-          unit: "lít",
-          adjustedBy: "Trần Văn B",
-          timestamp: new Date(2025, 4, 12, 9, 0),
-          note: "Bổ sung kho",
-          isRestock: true
-        }
-      ];
-
-      setChemicals(mockChemicals);
-      setPools(mockPools);
-      setAdjustmentHistory(mockAdjustmentHistory);
-      setLoading(false);
-    }, 1000);
+    reloadAll();
   }, []);
 
   // Lọc hóa chất theo tìm kiếm
   const filteredChemicals = chemicals.filter(chemical => 
-    chemical.name.toLowerCase().includes(searchText.toLowerCase()) || 
-    chemical.type.toLowerCase().includes(searchText.toLowerCase())
+    chemical.chemicalName.toLowerCase().includes(searchText.toLowerCase()) || 
+    chemical.chemicalType.toLowerCase().includes(searchText.toLowerCase())
   );
 
   // Hiển thị modal thêm hóa chất mới
@@ -217,7 +68,7 @@ const InventoryStock: React.FC = () => {
     setSelectedChemical(chemical);
     form.resetFields();
     form.setFieldsValue({
-      chemicalId: chemical.id,
+      chemicalId: chemical.chemicalId,
       amount: 0,
       unit: chemical.unit
     });
@@ -229,116 +80,124 @@ const InventoryStock: React.FC = () => {
     setSelectedChemical(chemical);
     form.resetFields();
     form.setFieldsValue({
-      chemicalId: chemical.id,
+      chemicalId: chemical.chemicalId,
       amount: 0,
       unit: chemical.unit
     });
     setIsRestockModalVisible(true);
   };
 
-  // Xử lý thêm hóa chất mới
-  const handleAddChemical = () => {
-    form.validateFields().then(values => {
-      const newChemical: Chemical = {
-        id: `chem-${Date.now()}`,
-        name: values.name,
-        type: values.type,
-        currentStock: values.currentStock,
+  // Thêm hóa chất mới
+  const handleAddChemical = async () => {
+    try {
+      const values = await form.validateFields();
+      const newChemical = {
+        chemicalName: values.name,
+        chemicalType: values.type,
+        quantity: values.currentStock,
         unit: values.unit,
         minThreshold: values.minThreshold,
         reorderLevel: values.reorderLevel,
-        lastRestocked: new Date(),
-        description: values.description
+        chDescription: values.description
       };
-
-      setChemicals([...chemicals, newChemical]);
+      await addChemical(newChemical);
+      message.success('Đã thêm hóa chất mới thành công!');
       setIsAddModalVisible(false);
       form.resetFields();
-      message.success('Đã thêm hóa chất mới thành công!');
-    });
+      await reloadAll();
+    } catch (error) {
+      message.error('Thêm hóa chất thất bại!');
+    }
   };
 
-  // Xử lý điều chỉnh hóa chất
-  const handleAdjustChemical = () => {
-    form.validateFields().then(values => {
+  // Sử dụng hóa chất
+  const handleAdjustChemical = async () => {
+    try {
+      const values = await form.validateFields();
       if (selectedChemical) {
-        // Cập nhật tồn kho
-        const updatedChemicals = chemicals.map(chem => {
-          if (chem.id === selectedChemical.id) {
-            return {
-              ...chem,
-              currentStock: Math.max(0, chem.currentStock - values.amount)
-            };
-          }
-          return chem;
-        });
-
-        // Thêm vào lịch sử điều chỉnh
-        const newAdjustment: AdjustmentRecord = {
-          id: `adj-${Date.now()}`,
-          chemicalId: selectedChemical.id,
-          chemicalName: selectedChemical.name,
-          poolId: values.poolId,
-          poolName: pools.find(pool => pool.id === values.poolId)?.name || "",
-          amount: values.amount,
+        const pool = pools.find(pool => pool.poolsId === values.poolsId);
+        const usageData = {
+          chemicalId: selectedChemical.chemicalId,
+          chemicalName: selectedChemical.chemicalName,
+          poolId: pool ? pool.poolsId : 0,
+          poolName: pool ? pool.poolName : "",
+          quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: "Người dùng hiện tại",  // Cần thay bằng user hiện tại từ auth
-          timestamp: new Date(),
-          note: values.note
+          adjustedBy: 1, // staffId thực tế nếu có
+          cStatus: "Hoàn thành",
+          note: values.note,
+          action: "Sử dụng"
         };
-
-        setChemicals(updatedChemicals);
-        setAdjustmentHistory([newAdjustment, ...adjustmentHistory]);
+        await applyChemical(usageData);
         setIsAdjustModalVisible(false);
         message.success('Đã điều chỉnh hóa chất thành công!');
+        await reloadAll();
       }
-    });
+    } catch (error) {
+      message.error('Điều chỉnh hóa chất thất bại!');
+    }
   };
 
-  // Xử lý nạp thêm hóa chất
-  const handleRestockChemical = () => {
-    form.validateFields().then(values => {
+  // Nạp thêm hóa chất
+  const handleRestockChemical = async () => {
+    try {
+      const values = await form.validateFields();
       if (selectedChemical) {
-        // Cập nhật tồn kho
-        const updatedChemicals = chemicals.map(chem => {
-          if (chem.id === selectedChemical.id) {
-            return {
-              ...chem,
-              currentStock: chem.currentStock + values.amount,
-              lastRestocked: new Date()
-            };
-          }
-          return chem;
-        });
-
-        // Thêm vào lịch sử điều chỉnh
-        const newAdjustment: AdjustmentRecord = {
-          id: `rst-${Date.now()}`,
-          chemicalId: selectedChemical.id,
-          chemicalName: selectedChemical.name,
-          poolId: "",
+        const restockData = {
+          chemicalId: selectedChemical.chemicalId,
+          chemicalName: selectedChemical.chemicalName,
+          poolId: 0,
           poolName: "",
-          amount: values.amount,
+          quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: "Người dùng hiện tại",  // Cần thay bằng user hiện tại từ auth
-          timestamp: new Date(),
+          adjustedBy: 1, // staffId thực tế nếu có
+          cStatus: "Hoàn thành",
           note: values.note,
-          isRestock: true
+          action: "Nạp thêm"
         };
-
-        setChemicals(updatedChemicals);
-        setAdjustmentHistory([newAdjustment, ...adjustmentHistory]);
+        await restockChemical(restockData);
         setIsRestockModalVisible(false);
         message.success('Đã nạp thêm hóa chất thành công!');
+        await reloadAll();
       }
-    });
+    } catch (error) {
+      message.error('Nạp thêm hóa chất thất bại!');
+    }
+  };
+
+  // Xóa hóa chất
+  const handleDeleteChemical = (chemicalId: number) => {
+    const hasUsageRecords = adjustmentHistory.some(
+      record => record.chemicalId === chemicalId && record.action === "Sử dụng"
+    );
+    if (hasUsageRecords) {
+      Modal.confirm({
+        title: 'Cảnh báo',
+        icon: <ExclamationCircleOutlined />,
+        content: 'Hóa chất này đã được sử dụng trong lịch sử. Việc xóa sẽ ảnh hưởng đến dữ liệu lịch sử. Bạn vẫn muốn tiếp tục?',
+        okText: 'Xóa',
+        cancelText: 'Hủy',
+        onOk: () => deleteChemicalAndHistory(chemicalId)
+      });
+    } else {
+      deleteChemicalAndHistory(chemicalId);
+    }
+  };
+
+  const deleteChemicalAndHistory = async (chemicalId: number) => {
+    try {
+      await deleteChemical(chemicalId);
+      message.success('Đã xóa hóa chất thành công!');
+      await reloadAll();
+    } catch (error) {
+      message.error('Xóa hóa chất thất bại!');
+    }
   };
 
   // Hiển thị trạng thái tồn kho
   const renderStockStatus = (current: number, min: number, reorder: number) => {
     let color = 'green';
     let status = 'Đầy đủ';
-    
     if (current <= min) {
       color = 'red';
       status = 'Thấp';
@@ -346,9 +205,7 @@ const InventoryStock: React.FC = () => {
       color = 'orange';
       status = 'Cần đặt thêm';
     }
-    
     const percent = Math.min(100, (current / reorder) * 100);
-    
     return (
       <div>
         <Progress 
@@ -366,7 +223,7 @@ const InventoryStock: React.FC = () => {
   const chemicalColumns = [
     {
       title: 'ID',
-      dataIndex: 'id',
+      dataIndex: 'chemicalId',
       key: 'id',
       width: 100,
       render: (text: string) => (
@@ -377,26 +234,26 @@ const InventoryStock: React.FC = () => {
     },
     {
       title: 'Tên hóa chất',
-      dataIndex: 'name',
+      dataIndex: 'chemicalName',
       key: 'name',
     },
     {
       title: 'Loại',
-      dataIndex: 'type',
+      dataIndex: 'chemicalType',
       key: 'type',
     },
     {
       title: 'Số lượng hiện có',
       key: 'stock',
       render: (record: Chemical) => (
-        <span>{record.currentStock} {record.unit}</span>
+        <span>{record.quantity} {record.unit}</span>
       ),
     },
     {
       title: 'Trạng thái',
       key: 'status',
       render: (_: string, record: Chemical) => 
-        renderStockStatus(record.currentStock, record.minThreshold, record.reorderLevel),
+        renderStockStatus(record.quantity, record.minThreshold, record.reorderLevel),
     },
     {
       title: 'Ngưỡng tối thiểu',
@@ -423,7 +280,6 @@ const InventoryStock: React.FC = () => {
               ghost
           />
           </Tooltip>
-          
           <Tooltip title="Nạp hóa chất">
             <Button 
               onClick={() => showRestockModal(record)} 
@@ -437,7 +293,7 @@ const InventoryStock: React.FC = () => {
             title="Bạn có chắc muốn xóa hóa chất này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => handleDeleteChemical(record.id)}
+            onConfirm={() => handleDeleteChemical(record.chemicalId)}
           >
             <Button 
               icon={<DeleteOutlined />}
@@ -454,24 +310,31 @@ const InventoryStock: React.FC = () => {
   const historyColumns = [
     {
       title: 'ID',
-      dataIndex: 'id',
+      dataIndex: 'historyId',
       key: 'id',
       width: 100,
       render: (text: string) => (
         <span className="text-xs text-gray-500 font-mono">
-          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+          {text && text.toString().length > 10 ? `${text.toString().substring(0, 10)}...` : text}
         </span>
       ),
     },
     {
       title: 'Thời gian',
-      dataIndex: 'timestamp',
+      dataIndex: 'cTimestamp',
       key: 'timestamp',
-      render: (timestamp: Date) => (
-        <span>
-          {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-        </span>
-      ),
+      render: (timestamp: string | Date) => {
+        try {
+          const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+          return (
+            <span>
+              {date.toLocaleDateString()} {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </span>
+          );
+        } catch (error) {
+          return <span>Invalid date</span>;
+        }
+      },
     },
     {
       title: 'Hóa chất',
@@ -482,8 +345,8 @@ const InventoryStock: React.FC = () => {
       title: 'Loại thao tác',
       key: 'actionType',
       render: (_: unknown, record: AdjustmentRecord) => (
-        <Tag color={record.isRestock ? 'green' : 'blue'}>
-          {record.isRestock ? 'Nạp thêm' : 'Sử dụng'}
+        <Tag color={record.action === "Nạp thêm" ? 'green' : 'blue'}>
+          {record.action}
         </Tag>
       ),
     },
@@ -495,10 +358,14 @@ const InventoryStock: React.FC = () => {
     },
     {
       title: 'Số lượng',
-      key: 'amount',
-      render: (_: string, record: AdjustmentRecord) => (
-        <div>{record.amount} {record.unit}</div>
-      ),
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (quantity: number) => quantity,
+    },
+    {
+      title: 'Đơn vị',
+      dataIndex: 'unit',
+      key: 'unit',
     },
     {
       title: 'Người thực hiện',
@@ -542,13 +409,12 @@ const InventoryStock: React.FC = () => {
               Thêm hóa chất mới
             </Button>
           </div>
-          
           <Card className="mt-4 shadow-md overflow-hidden">
             <div className="overflow-x-auto w-full">
               <Table 
                 columns={chemicalColumns} 
                 dataSource={filteredChemicals}
-                rowKey="id"
+                rowKey="chemicalId"
                 loading={loading}
                 pagination={{ pageSize: 6 }}
                 scroll={{ x: 'max-content' }}
@@ -572,12 +438,11 @@ const InventoryStock: React.FC = () => {
               className="w-full md:w-64"
             />
           </div>
-          
           <Card className="mt-4 shadow-md">
             <Table 
               columns={historyColumns} 
               dataSource={filteredHistory}
-              rowKey="id"
+              rowKey="historyId"
               loading={loading}
               pagination={{ pageSize: 6 }}
             />
@@ -587,57 +452,17 @@ const InventoryStock: React.FC = () => {
     }
   ];
 
-  // Thêm hàm xử lý xóa hóa chất
-  const handleDeleteChemical = (chemicalId: string) => {
-    // Tìm xem hóa chất đã được sử dụng trong lịch sử chưa
-    const hasUsageRecords = adjustmentHistory.some(
-      record => record.chemicalId === chemicalId && !record.isRestock
-    );
-    
-    if (hasUsageRecords) {
-      Modal.confirm({
-        title: 'Cảnh báo',
-        icon: <ExclamationCircleOutlined />,
-        content: 'Hóa chất này đã được sử dụng trong lịch sử. Việc xóa sẽ ảnh hưởng đến dữ liệu lịch sử. Bạn vẫn muốn tiếp tục?',
-        okText: 'Xóa',
-        cancelText: 'Hủy',
-        onOk: () => {
-          deleteChemicalAndHistory(chemicalId);
-        }
-      });
-    } else {
-      deleteChemicalAndHistory(chemicalId);
-    }
-  };
-  
-  // Hàm xóa hóa chất và lịch sử liên quan
-  const deleteChemicalAndHistory = (chemicalId: string) => {
-    // Xóa hóa chất
-    const updatedChemicals = chemicals.filter(chem => chem.id !== chemicalId);
-    setChemicals(updatedChemicals);
-    
-    // Xóa lịch sử liên quan (tùy chọn)
-    const updatedHistory = adjustmentHistory.filter(
-      record => record.chemicalId !== chemicalId
-    );
-    setAdjustmentHistory(updatedHistory);
-    
-    message.success('Đã xóa hóa chất thành công!');
-  };
-
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Quản lý hóa chất hồ bơi</h1>
         <p className="text-gray-600">Theo dõi tồn kho và điều chỉnh hóa chất cho các hồ bơi</p>
       </div>
-
       <Tabs 
         activeKey={activeTab} 
         onChange={setActiveTab} 
         items={items}
       />
-
       {/* Modal thêm hóa chất mới */}
       <Modal
         title="Thêm hóa chất mới"
@@ -655,7 +480,6 @@ const InventoryStock: React.FC = () => {
           >
             <Input placeholder="Nhập tên hóa chất" />
           </Form.Item>
-          
           <Form.Item
             name="type"
             label="Loại hóa chất"
@@ -669,7 +493,6 @@ const InventoryStock: React.FC = () => {
               <Select.Option value="Làm trong nước">Làm trong nước</Select.Option>
             </Select>
           </Form.Item>
-          
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="currentStock"
@@ -678,7 +501,6 @@ const InventoryStock: React.FC = () => {
             >
               <InputNumber min={0} style={{ width: '100%' }} placeholder="Nhập số lượng" />
             </Form.Item>
-            
             <Form.Item
               name="unit"
               label="Đơn vị"
@@ -691,7 +513,6 @@ const InventoryStock: React.FC = () => {
               </Select>
             </Form.Item>
           </div>
-          
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="minThreshold"
@@ -700,7 +521,6 @@ const InventoryStock: React.FC = () => {
             >
               <InputNumber min={0} style={{ width: '100%' }} placeholder="Ngưỡng tối thiểu" />
             </Form.Item>
-            
             <Form.Item
               name="reorderLevel"
               label="Mức đặt lại"
@@ -709,7 +529,6 @@ const InventoryStock: React.FC = () => {
               <InputNumber min={0} style={{ width: '100%' }} placeholder="Mức đặt lại" />
             </Form.Item>
           </div>
-          
           <Form.Item
             name="description"
             label="Mô tả"
@@ -718,10 +537,9 @@ const InventoryStock: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-
       {/* Modal điều chỉnh hóa chất */}
       <Modal
-        title={`Điều chỉnh ${selectedChemical?.name || 'hóa chất'}`}
+        title={`Điều chỉnh ${selectedChemical?.chemicalName || 'hóa chất'}`}
         open={isAdjustModalVisible}
         onCancel={() => setIsAdjustModalVisible(false)}
         onOk={handleAdjustChemical}
@@ -732,27 +550,24 @@ const InventoryStock: React.FC = () => {
           <Form.Item name="chemicalId" hidden>
             <Input />
           </Form.Item>
-          
           {selectedChemical && (
             <div className="bg-blue-50 p-3 rounded mb-4">
               <p className="text-blue-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.currentStock} {selectedChemical.unit}
+                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity} {selectedChemical.unit}
               </p>
             </div>
           )}
-          
           <Form.Item
-            name="poolId"
+            name="poolsId"  // Thay vì poolId
             label="Hồ bơi"
             rules={[{ required: true, message: 'Vui lòng chọn hồ bơi!' }]}
           >
             <Select placeholder="Chọn hồ bơi">
               {pools.map(pool => (
-                <Select.Option key={pool.id} value={pool.id}>{pool.name}</Select.Option>
+                <Select.Option key={pool.poolsId} value={pool.poolsId}>{pool.poolName}</Select.Option>
               ))}
             </Select>
           </Form.Item>
-          
           <Form.Item
             name="amount"
             label="Lượng sử dụng"
@@ -763,7 +578,7 @@ const InventoryStock: React.FC = () => {
                   if (!value || !selectedChemical) {
                     return Promise.resolve();
                   }
-                  if (value > selectedChemical.currentStock) {
+                  if (value > selectedChemical.quantity) {
                     return Promise.reject(new Error('Lượng sử dụng không thể lớn hơn tồn kho!'));
                   }
                   return Promise.resolve();
@@ -773,13 +588,12 @@ const InventoryStock: React.FC = () => {
           >
             <InputNumber 
               min={0} 
-              max={selectedChemical?.currentStock || 0} 
+              max={selectedChemical?.quantity || 0} 
               style={{ width: '100%' }} 
               placeholder="Nhập lượng sử dụng" 
               addonAfter={selectedChemical?.unit}
             />
           </Form.Item>
-          
           <Form.Item
             name="note"
             label="Ghi chú"
@@ -788,10 +602,9 @@ const InventoryStock: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-
       {/* Modal nạp thêm hóa chất */}
       <Modal
-        title={`Nạp thêm ${selectedChemical?.name || 'hóa chất'}`}
+        title={`Nạp thêm ${selectedChemical?.chemicalName || 'hóa chất'}`}
         open={isRestockModalVisible}
         onCancel={() => setIsRestockModalVisible(false)}
         onOk={handleRestockChemical}
@@ -802,15 +615,13 @@ const InventoryStock: React.FC = () => {
           <Form.Item name="chemicalId" hidden>
             <Input />
           </Form.Item>
-          
           {selectedChemical && (
             <div className="bg-green-50 p-3 rounded mb-4">
               <p className="text-green-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.currentStock} {selectedChemical.unit}
+                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity} {selectedChemical.unit}
               </p>
             </div>
           )}
-          
           <Form.Item
             name="amount"
             label="Số lượng nạp thêm"
@@ -823,14 +634,12 @@ const InventoryStock: React.FC = () => {
               addonAfter={selectedChemical?.unit}
             />
           </Form.Item>
-
           <Form.Item
             name="supplier"
             label="Nhà cung cấp"
           >
             <Input placeholder="Nhập tên nhà cung cấp (không bắt buộc)" />
           </Form.Item>
-          
           <Form.Item
             name="note"
             label="Ghi chú"

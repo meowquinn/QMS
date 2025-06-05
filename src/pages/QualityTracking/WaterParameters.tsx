@@ -7,9 +7,7 @@ import { InfoCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { getAllPools } from '../../services/poolService';
 import { addWaterQualityParameter } from '../../services/waterQualityService';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Pool } from '../../services/types';
-
-// Import User interface từ authService để TypeScript nhận diện đúng kiểu dữ liệu
+import type {Pool, WaterParameterFormData, WaterQualitySubmitData } from '../../services/types';
 import { getCurrentUser } from '../../services/authService';
 
 const { Option } = Select;
@@ -31,31 +29,7 @@ interface ChemicalSuggestion {
   recommendation: string;
 }
 
-// Cập nhật interface form data để phù hợp với bảng WaterQualityParameters
-interface WaterParameterFormData {
-  poolName: string;
-  timestamp: Date | null;
-  temperature: number | null;
-  pH: number | null;
-  chlorine: number | null;
-  notes: string;
-  resolved: boolean;
-  needsAction: boolean;
-}
 
-// Interface dữ liệu gửi đến API theo cấu trúc bảng mới
-interface WaterQualitySubmitData {
-  poolName: string;
-  pTimestamp: Date;
-  temperatureC: number;
-  pHLevel: number;
-  chlorineMgPerL: number;
-  notes: string;
-  createdBy?: number; // Đổi sang number (staffId)
-  rStatus: string;
-  resolved: boolean;
-  needsAction: boolean;
-}
 
 const WaterParameters: React.FC = () => {
   const navigate = useNavigate();

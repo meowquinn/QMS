@@ -9,6 +9,8 @@ import { getWaterQualityHistory, updateWaterQualityResolved } from '../../servic
 import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool } from '../../services/types';
+import type { WaterQualityRecord } from '../../services/types'; // Cập nhật import nếu cần
+
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -16,19 +18,7 @@ const { RangePicker } = DatePicker;
 // Define measurement status
 
 // Định nghĩa kiểu dữ liệu cho bản ghi đo chất lượng nước
-interface WaterQualityRecord {
-  parameterId: number;
-  poolName: string;
-  pTimestamp: Date;
-  temperatureC: number;
-  pHLevel: number;
-  chlorineMgPerL: number;
-  notes: string;
-  createdBy?: number; // Đổi sang number (staffId)
-  rStatus: string;
-  resolved: boolean;
-  needsAction: boolean;
-}
+
 
 const WaterQualityRecords: React.FC = () => {
   const [records, setRecords] = useState<WaterQualityRecord[]>([]);

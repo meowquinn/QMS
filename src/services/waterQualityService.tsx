@@ -1,19 +1,5 @@
 import api from './api';
-
-// Cập nhật interface theo đúng cấu trúc bảng WaterQualityParameters
-export interface WaterQualityParameter {
-  parameterId: number;
-  poolName: string;
-  pTimestamp: Date;
-  temperatureC: number;
-  pHLevel: number;
-  chlorineMgPerL: number;
-  notes: string;
-  createdBy?: number; // staffId
-  rStatus: string;
-  resolved: boolean;
-  needsAction: boolean;
-}
+import type { WaterQualityParameter } from './types';
 
 /**
  * Thêm một bản ghi đo chất lượng nước mới
