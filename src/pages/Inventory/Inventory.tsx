@@ -198,6 +198,7 @@ const InventoryStock: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (selectedChemical) {
+        // Lấy đúng trường poolsId từ values
         const pool = pools.find((pool) => pool.poolsId === values.poolsId);
         const usageData = {
           chemicalId: selectedChemical.chemicalId,
@@ -206,7 +207,7 @@ const InventoryStock: React.FC = () => {
           poolName: pool ? pool.poolName : "",
           quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: 1, // staffId thực tế nếu có
+          adjustedBy: 1,
           cStatus: "Hoàn thành",
           note: values.note,
           action: "Sử dụng",
@@ -533,7 +534,7 @@ const InventoryStock: React.FC = () => {
             <div className="overflow-x-auto w-full">
               <Table
                 columns={chemicalColumns}
-                dataSource={chemicals}
+                dataSource={filteredChemicals}
                 rowKey={(record) =>
                   record?.chemicalId?.toString() || Math.random().toString()
                 }
