@@ -34,9 +34,9 @@ import {
   restockChemical,
   applyChemical,
   getAllChemicals,
-  getChemicalHistory,
+  getChemicalHistory,getAllPools
 } from "../../services/chemicalService";
-import { getAllPools } from "../../services/poolService";
+// import { getAllPools } from "../../services/poolService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
@@ -61,7 +61,7 @@ const InventoryStock: React.FC = () => {
     try {
       const [chemRes, poolRes, historyRes] = await Promise.all([
         getAllChemicals(),
-        getAllPools(),
+        // getAllPools(),
         getChemicalHistory(),
       ]);
 
@@ -103,6 +103,24 @@ const InventoryStock: React.FC = () => {
         message.error("Không thể tải dữ liệu hóa chất!");
       });
   }, []);
+
+    useEffect(() => {
+    getAllPools()
+      .then((res) => {
+        if (res && res.data) {
+          setPools(res.data);
+        } else {
+          console.warn("Invalid chemicals data:", res);
+          setPools([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chemicals:", error);
+        message.error("Không thể tải dữ liệu hóa chất!");
+      });
+  }, []);
+
+
 
   useEffect(() => {
     reloadAll();
@@ -382,7 +400,7 @@ const InventoryStock: React.FC = () => {
               icon={<EditOutlined />}
               type="primary"
               size="small"
-              onClick={() => showAdjustModal(record)}
+              onClick={() => {showAdjustModal(record); setLoading(true)}}
               className="bg-blue-500"
               ghost
             />
@@ -574,6 +592,8 @@ const InventoryStock: React.FC = () => {
       ),
     },
   ];
+
+  
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
