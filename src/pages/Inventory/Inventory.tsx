@@ -1,31 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Table, Card, Button, Tag, Space, Input, Modal, Form, 
-  InputNumber, Select, Tabs, message, Tooltip, Progress, Popconfirm
-} from 'antd';
-import { 
-  PlusOutlined, EditOutlined, HistoryOutlined, 
-  SearchOutlined, InfoCircleOutlined, PlusCircleOutlined,
-  DeleteOutlined, ExclamationCircleOutlined
-} from '@ant-design/icons';
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Card,
+  Button,
+  Tag,
+  Space,
+  Input,
+  Modal,
+  Form,
+  InputNumber,
+  Select,
+  Tabs,
+  message,
+  Tooltip,
+  Progress,
+  Popconfirm,
+} from "antd";
+import {
+  PlusOutlined,
+  EditOutlined,
+  HistoryOutlined,
+  SearchOutlined,
+  InfoCircleOutlined,
+  PlusCircleOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 
-import type { Pool, Chemical, AdjustmentRecord } from '../../services/types';
-import { 
-  addChemical, deleteChemical, restockChemical, applyChemical, 
-  getAllChemicals, getChemicalHistory 
-} from '../../services/chemicalService';
-import { getAllPools } from '../../services/poolService';
+import type { Pool, Chemical, AdjustmentRecord } from "../../services/types";
+import {
+  addChemical,
+  deleteChemical,
+  restockChemical,
+  applyChemical,
+  getAllChemicals,
+  getChemicalHistory,
+} from "../../services/chemicalService";
+import { getAllPools } from "../../services/poolService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
-  const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
+  const [adjustmentHistory, setAdjustmentHistory] = useState<
+    AdjustmentRecord[]
+  >([]);
   const [pools, setPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [searchText, setSearchText] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>("");
   const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isRestockModalVisible, setIsRestockModalVisible] = useState(false);
-  const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
+  const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(
+    null
+  );
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
 
@@ -36,31 +62,52 @@ const InventoryStock: React.FC = () => {
       const [chemRes, poolRes, historyRes] = await Promise.all([
         getAllChemicals(),
         getAllPools(),
-        getChemicalHistory()
+        getChemicalHistory(),
       ]);
-      
+
       // Debug logs
-      console.log("Chemicals API response:", chemRes);
-      console.log("Chemicals data:", chemRes?.data);
-      console.log("Pools API response:", poolRes);
-      console.log("History API response:", historyRes);
-      
+      console.log(" Chemicals API response:", chemRes);
+      console.log(" Chemicals data:", chemRes?.data);
+      console.log(" Pools API response:", poolRes);
+      console.log(" History API response:", historyRes);
+
       // Xử lý kết quả an toàn
-      const chemicalsData = Array.isArray(chemRes?.data) ? chemRes.data : 
-                           (chemRes && typeof chemRes === 'object' ? (chemRes.data || []) : []);
-      
+      const chemicalsData = Array.isArray(chemRes?.data)
+        ? chemRes.data
+        : chemRes && typeof chemRes === "object"
+        ? chemRes.data || []
+        : [];
+
       console.log("Processed chemicals data:", chemicalsData);
-      
+
       setChemicals(chemicalsData);
       setPools(Array.isArray(poolRes?.data) ? poolRes.data : []);
-      setAdjustmentHistory(Array.isArray(historyRes?.data) ? historyRes.data : []);
+      setAdjustmentHistory(
+        Array.isArray(historyRes?.data) ? historyRes.data : []
+      );
     } catch (error) {
       console.error("Error in reloadAll:", error);
-      message.error('Không thể tải dữ liệu hóa chất hoặc lịch sử!');
+      message.error("Không thể tải dữ liệu hóa chất hoặc lịch sử!");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    getAllChemicals()
+      .then((res) => {
+        if (res && res.data) {
+          setChemicals(res.data);
+        } else {
+          console.warn("Invalid chemicals data:", res);
+          setChemicals([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chemicals:", error);
+        message.error("Không thể tải dữ liệu hóa chất!");
+      });
+  }, []);
 
   useEffect(() => {
     reloadAll();
@@ -69,24 +116,26 @@ const InventoryStock: React.FC = () => {
   // Lọc hóa chất theo tìm kiếm - với xử lý an toàn
   const filteredChemicals = React.useMemo(() => {
     console.log("Current chemicals state:", chemicals);
-    
+
     if (!Array.isArray(chemicals)) {
       console.warn("chemicals is not an array:", chemicals);
       return [];
     }
-    
-    const filtered = chemicals.filter(chemical => {
+
+    const filtered = chemicals.filter((chemical) => {
       if (!chemical) return false;
-      
-      const nameMatch = chemical.chemicalName && 
+
+      const nameMatch =
+        chemical.chemicalName &&
         chemical.chemicalName.toLowerCase().includes(searchText.toLowerCase());
-      
-      const typeMatch = chemical.chemicalType && 
+
+      const typeMatch =
+        chemical.chemicalType &&
         chemical.chemicalType.toLowerCase().includes(searchText.toLowerCase());
-      
+
       return nameMatch || typeMatch;
     });
-    
+
     console.log("Filtered chemicals:", filtered);
     return filtered;
   }, [chemicals, searchText]);
@@ -104,7 +153,7 @@ const InventoryStock: React.FC = () => {
     form.setFieldsValue({
       chemicalId: chemical.chemicalId,
       amount: 0,
-      unit: chemical.unit
+      unit: chemical.unit,
     });
     setIsAdjustModalVisible(true);
   };
@@ -116,7 +165,7 @@ const InventoryStock: React.FC = () => {
     form.setFieldsValue({
       chemicalId: chemical.chemicalId,
       amount: 0,
-      unit: chemical.unit
+      unit: chemical.unit,
     });
     setIsRestockModalVisible(true);
   };
@@ -132,15 +181,15 @@ const InventoryStock: React.FC = () => {
         unit: values.unit,
         minThreshold: values.minThreshold,
         reorderLevel: values.reorderLevel,
-        chDescription: values.description
+        chDescription: values.description,
       };
       await addChemical(newChemical);
-      message.success('Đã thêm hóa chất mới thành công!');
+      message.success("Đã thêm hóa chất mới thành công!");
       setIsAddModalVisible(false);
       form.resetFields();
       await reloadAll();
     } catch (error) {
-      message.error('Thêm hóa chất thất bại!');
+      message.error("Thêm hóa chất thất bại!");
     }
   };
 
@@ -149,7 +198,7 @@ const InventoryStock: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (selectedChemical) {
-        const pool = pools.find(pool => pool.poolsId === values.poolsId);
+        const pool = pools.find((pool) => pool.poolsId === values.poolsId);
         const usageData = {
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
@@ -160,15 +209,15 @@ const InventoryStock: React.FC = () => {
           adjustedBy: 1, // staffId thực tế nếu có
           cStatus: "Hoàn thành",
           note: values.note,
-          action: "Sử dụng"
+          action: "Sử dụng",
         };
         await applyChemical(usageData);
         setIsAdjustModalVisible(false);
-        message.success('Đã điều chỉnh hóa chất thành công!');
+        message.success("Đã điều chỉnh hóa chất thành công!");
         await reloadAll();
       }
     } catch (error) {
-      message.error('Điều chỉnh hóa chất thất bại!');
+      message.error("Điều chỉnh hóa chất thất bại!");
     }
   };
 
@@ -187,31 +236,33 @@ const InventoryStock: React.FC = () => {
           adjustedBy: 1, // staffId thực tế nếu có
           cStatus: "Hoàn thành",
           note: values.note,
-          action: "Nạp thêm"
+          action: "Nạp thêm",
         };
         await restockChemical(restockData);
         setIsRestockModalVisible(false);
-        message.success('Đã nạp thêm hóa chất thành công!');
+        message.success("Đã nạp thêm hóa chất thành công!");
         await reloadAll();
       }
     } catch (error) {
-      message.error('Nạp thêm hóa chất thất bại!');
+      message.error("Nạp thêm hóa chất thất bại!");
     }
   };
 
   // Xóa hóa chất
   const handleDeleteChemical = (chemicalId: number) => {
     const hasUsageRecords = adjustmentHistory.some(
-      record => record.chemicalId === chemicalId && record.action === "Sử dụng"
+      (record) =>
+        record.chemicalId === chemicalId && record.action === "Sử dụng"
     );
     if (hasUsageRecords) {
       Modal.confirm({
-        title: 'Cảnh báo',
+        title: "Cảnh báo",
         icon: <ExclamationCircleOutlined />,
-        content: 'Hóa chất này đã được sử dụng trong lịch sử. Việc xóa sẽ ảnh hưởng đến dữ liệu lịch sử. Bạn vẫn muốn tiếp tục?',
-        okText: 'Xóa',
-        cancelText: 'Hủy',
-        onOk: () => deleteChemicalAndHistory(chemicalId)
+        content:
+          "Hóa chất này đã được sử dụng trong lịch sử. Việc xóa sẽ ảnh hưởng đến dữ liệu lịch sử. Bạn vẫn muốn tiếp tục?",
+        okText: "Xóa",
+        cancelText: "Hủy",
+        onOk: () => deleteChemicalAndHistory(chemicalId),
       });
     } else {
       deleteChemicalAndHistory(chemicalId);
@@ -221,34 +272,36 @@ const InventoryStock: React.FC = () => {
   const deleteChemicalAndHistory = async (chemicalId: number) => {
     try {
       await deleteChemical(chemicalId);
-      message.success('Đã xóa hóa chất thành công!');
+      message.success("Đã xóa hóa chất thành công!");
       await reloadAll();
     } catch (error) {
-      message.error('Xóa hóa chất thất bại!');
+      message.error("Xóa hóa chất thất bại!");
     }
   };
 
   // Hiển thị trạng thái tồn kho
   const renderStockStatus = (current: number, min: number, reorder: number) => {
-    let color = 'green';
-    let status = 'Đầy đủ';
+    let color = "green";
+    let status = "Đầy đủ";
     if (current <= min) {
-      color = 'red';
-      status = 'Thấp';
+      color = "red";
+      status = "Thấp";
     } else if (current <= reorder) {
-      color = 'orange';
-      status = 'Cần đặt thêm';
+      color = "orange";
+      status = "Cần đặt thêm";
     }
     const percent = Math.min(100, (current / reorder) * 100);
     return (
       <div>
-        <Progress 
-          percent={percent} 
-          showInfo={false} 
-          strokeColor={color} 
-          size="small" 
+        <Progress
+          percent={percent}
+          showInfo={false}
+          strokeColor={color}
+          size="small"
         />
-        <Tag color={color} style={{ marginTop: '8px' }}>{status}</Tag>
+        <Tag color={color} style={{ marginTop: "8px" }}>
+          {status}
+        </Tag>
       </div>
     );
   };
@@ -256,9 +309,9 @@ const InventoryStock: React.FC = () => {
   // Cấu hình cột bảng hóa chất
   const chemicalColumns = [
     {
-      title: 'ID',
-      dataIndex: 'chemicalId',
-      key: 'id',
+      title: "ID",
+      dataIndex: "chemicalId",
+      key: "id",
       width: 100,
       render: (text: string) => (
         <span className="text-xs text-gray-500 font-mono">
@@ -267,54 +320,65 @@ const InventoryStock: React.FC = () => {
       ),
     },
     {
-      title: 'Tên hóa chất',
-      dataIndex: 'chemicalName',
-      key: 'name',
+      title: "Tên hóa chất",
+      dataIndex: "chemicalName",
+      key: "name",
     },
     {
-      title: 'Loại',
-      dataIndex: 'chemicalType',
-      key: 'type',
+      title: "Loại",
+      dataIndex: "chemicalType",
+      key: "type",
     },
     {
-      title: 'Số lượng hiện có',
-      key: 'stock',
+      title: "Số lượng hiện có",
+      key: "stock",
       render: (record: Chemical) => (
-        <span>{record.quantity} {record.unit}</span>
+        <span>
+          {record.quantity} {record.unit}
+        </span>
       ),
     },
     {
-      title: 'Trạng thái',
-      key: 'status',
-      render: (_: string, record: Chemical) => 
-        renderStockStatus(record.quantity, record.minThreshold, record.reorderLevel),
+      title: "Trạng thái",
+      key: "status",
+      render: (_: string, record: Chemical) =>
+        renderStockStatus(
+          record.quantity,
+          record.minThreshold,
+          record.reorderLevel
+        ),
     },
     {
-      title: 'Ngưỡng tối thiểu',
-      key: 'threshold',
+      title: "Ngưỡng tối thiểu",
+      key: "threshold",
       render: (_: string, record: Chemical) => (
         <div>
-          <div className="text-sm">Tối thiểu: {record.minThreshold} {record.unit}</div>
-          <div className="text-sm">Đặt lại: {record.reorderLevel} {record.unit}</div>
+          <div className="text-sm">
+            Tối thiểu: {record.minThreshold} {record.unit}
+          </div>
+          <div className="text-sm">
+            Đặt lại: {record.reorderLevel} {record.unit}
+          </div>
         </div>
       ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'chDescription',
-      key: 'description',
+      title: "Mô tả",
+      dataIndex: "chDescription",
+      key: "description",
       width: 100,
-      render: (text: string | undefined) => (
+      render: (text: string | undefined) =>
         text ? (
           <Tooltip title={text}>
-            <InfoCircleOutlined style={{ cursor: 'pointer' }} />
+            <InfoCircleOutlined style={{ cursor: "pointer" }} />
           </Tooltip>
-        ) : <span>-</span>
-      ),
+        ) : (
+          <span>-</span>
+        ),
     },
     {
-      title: 'Thao tác',
-      key: 'action',
+      title: "Thao tác",
+      key: "action",
       render: (_: string, record: Chemical) => (
         <Space size="middle">
           <Tooltip title="Sử dụng hóa chất">
@@ -328,10 +392,10 @@ const InventoryStock: React.FC = () => {
             />
           </Tooltip>
           <Tooltip title="Nạp hóa chất">
-            <Button 
-              onClick={() => showRestockModal(record)} 
-              icon={<PlusCircleOutlined />} 
-              type="primary" 
+            <Button
+              onClick={() => showRestockModal(record)}
+              icon={<PlusCircleOutlined />}
+              type="primary"
               size="small"
               className="bg-green-600"
             />
@@ -342,11 +406,7 @@ const InventoryStock: React.FC = () => {
             cancelText="Hủy"
             onConfirm={() => handleDeleteChemical(record.chemicalId)}
           >
-            <Button 
-              icon={<DeleteOutlined />}
-              danger
-              size="small"
-            />
+            <Button icon={<DeleteOutlined />} danger size="small" />
           </Popconfirm>
         </Space>
       ),
@@ -356,26 +416,33 @@ const InventoryStock: React.FC = () => {
   // Cấu hình cột bảng lịch sử
   const historyColumns = [
     {
-      title: 'ID',
-      dataIndex: 'historyId',
-      key: 'id',
+      title: "ID",
+      dataIndex: "historyId",
+      key: "id",
       width: 100,
       render: (text: string) => (
         <span className="text-xs text-gray-500 font-mono">
-          {text && text.toString().length > 10 ? `${text.toString().substring(0, 10)}...` : text}
+          {text && text.toString().length > 10
+            ? `${text.toString().substring(0, 10)}...`
+            : text}
         </span>
       ),
     },
     {
-      title: 'Thời gian',
-      dataIndex: 'cTimestamp',
-      key: 'timestamp',
+      title: "Thời gian",
+      dataIndex: "cTimestamp",
+      key: "timestamp",
       render: (timestamp: string | Date) => {
         try {
-          const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+          const date =
+            typeof timestamp === "string" ? new Date(timestamp) : timestamp;
           return (
             <span>
-              {date.toLocaleDateString()} {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              {date.toLocaleDateString()}{" "}
+              {date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           );
         } catch (error) {
@@ -384,72 +451,78 @@ const InventoryStock: React.FC = () => {
       },
     },
     {
-      title: 'Hóa chất',
-      dataIndex: 'chemicalName',
-      key: 'chemicalName',
+      title: "Hóa chất",
+      dataIndex: "chemicalName",
+      key: "chemicalName",
     },
     {
-      title: 'Loại thao tác',
-      key: 'actionType',
+      title: "Loại thao tác",
+      key: "actionType",
       render: (_: unknown, record: AdjustmentRecord) => (
-        <Tag color={record.action === "Nạp thêm" ? 'green' : 'blue'}>
+        <Tag color={record.action === "Nạp thêm" ? "green" : "blue"}>
           {record.action}
         </Tag>
       ),
     },
     {
-      title: 'Hồ bơi',
-      dataIndex: 'poolName',
-      key: 'poolName',
-      render: (text: string) => text || 'N/A',
+      title: "Hồ bơi",
+      dataIndex: "poolName",
+      key: "poolName",
+      render: (text: string) => text || "N/A",
     },
     {
-      title: 'Số lượng',
-      dataIndex: 'quantity',
-      key: 'quantity',
+      title: "Số lượng",
+      dataIndex: "quantity",
+      key: "quantity",
       render: (quantity: number) => quantity,
     },
     {
-      title: 'Đơn vị',
-      dataIndex: 'unit',
-      key: 'unit',
+      title: "Đơn vị",
+      dataIndex: "unit",
+      key: "unit",
     },
     {
-      title: 'Người thực hiện',
-      dataIndex: 'adjustedBy',
-      key: 'adjustedBy',
+      title: "Người thực hiện",
+      dataIndex: "adjustedBy",
+      key: "adjustedBy",
     },
     {
-      title: 'Ghi chú',
-      dataIndex: 'note',
-      key: 'note',
-      render: (note: string) => note || '-',
+      title: "Ghi chú",
+      dataIndex: "note",
+      key: "note",
+      render: (note: string) => note || "-",
     },
   ];
 
   // Filter lịch sử theo searchText
-  const filteredHistory = adjustmentHistory.filter(record => 
-    record.chemicalName.toLowerCase().includes(searchText.toLowerCase()) || 
-    (record.poolName && record.poolName.toLowerCase().includes(searchText.toLowerCase()))
+  const filteredHistory = adjustmentHistory.filter(
+    (record) =>
+      record.chemicalName.toLowerCase().includes(searchText.toLowerCase()) ||
+      (record.poolName &&
+        record.poolName.toLowerCase().includes(searchText.toLowerCase()))
   );
 
   const items = [
     {
-      key: 'inventory',
-      label: <span><InfoCircleOutlined /> Tồn kho hóa chất</span>,
+      key: "inventory",
+      label: (
+        <span>
+          <InfoCircleOutlined /> Tồn kho hóa chất
+        </span>
+      ),
       children: (
         <div>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-            <Input 
-              placeholder="Tìm kiếm hóa chất..." 
-              prefix={<SearchOutlined />} 
+            <Input
+              placeholder="Tìm kiếm hóa chất..."
+              prefix={<SearchOutlined />}
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={(e) => setSearchText(e.target.value)}
               className="w-full md:w-64"
             />
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
               onClick={showAddModal}
               className="mt-2 md:mt-0 bg-blue-500"
             >
@@ -458,14 +531,16 @@ const InventoryStock: React.FC = () => {
           </div>
           <Card className="mt-4 shadow-md overflow-hidden">
             <div className="overflow-x-auto w-full">
-              <Table 
-                columns={chemicalColumns} 
-                dataSource={filteredChemicals}
-                rowKey={record => record?.chemicalId?.toString() || Math.random().toString()}
+              <Table
+                columns={chemicalColumns}
+                dataSource={chemicals}
+                rowKey={(record) =>
+                  record?.chemicalId?.toString() || Math.random().toString()
+                }
                 loading={loading}
                 pagination={{ pageSize: 6 }}
-                scroll={{ x: 'max-content' }}
-                locale={{ emptyText: 'Không có dữ liệu hóa chất' }}
+                scroll={{ x: "max-content" }}
+                locale={{ emptyText: "Không có dữ liệu hóa chất" }}
               />
             </div>
           </Card>
@@ -473,22 +548,26 @@ const InventoryStock: React.FC = () => {
       ),
     },
     {
-      key: 'history',
-      label: <span><HistoryOutlined /> Lịch sử thao tác</span>,
+      key: "history",
+      label: (
+        <span>
+          <HistoryOutlined /> Lịch sử thao tác
+        </span>
+      ),
       children: (
         <div>
           <div className="flex justify-between items-center mb-4">
-            <Input 
-              placeholder="Tìm kiếm theo hóa chất hoặc hồ bơi..." 
-              prefix={<SearchOutlined />} 
+            <Input
+              placeholder="Tìm kiếm theo hóa chất hoặc hồ bơi..."
+              prefix={<SearchOutlined />}
               value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              onChange={(e) => setSearchText(e.target.value)}
               className="w-full md:w-64"
             />
           </div>
           <Card className="mt-4 shadow-md">
-            <Table 
-              columns={historyColumns} 
+            <Table
+              columns={historyColumns}
               dataSource={filteredHistory}
               rowKey="historyId"
               loading={loading}
@@ -497,20 +576,20 @@ const InventoryStock: React.FC = () => {
           </Card>
         </div>
       ),
-    }
+    },
   ];
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Quản lý hóa chất hồ bơi</h1>
-        <p className="text-gray-600">Theo dõi tồn kho và điều chỉnh hóa chất cho các hồ bơi</p>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Quản lý hóa chất hồ bơi
+        </h1>
+        <p className="text-gray-600">
+          Theo dõi tồn kho và điều chỉnh hóa chất cho các hồ bơi
+        </p>
       </div>
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab} 
-        items={items}
-      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
       {/* Modal thêm hóa chất mới */}
       <Modal
         title="Thêm hóa chất mới"
@@ -524,35 +603,47 @@ const InventoryStock: React.FC = () => {
           <Form.Item
             name="name"
             label="Tên hóa chất"
-            rules={[{ required: true, message: 'Vui lòng nhập tên hóa chất!' }]}
+            rules={[{ required: true, message: "Vui lòng nhập tên hóa chất!" }]}
           >
             <Input placeholder="Nhập tên hóa chất" />
           </Form.Item>
           <Form.Item
             name="type"
             label="Loại hóa chất"
-            rules={[{ required: true, message: 'Vui lòng chọn loại hóa chất!' }]}
+            rules={[
+              { required: true, message: "Vui lòng chọn loại hóa chất!" },
+            ]}
           >
             <Select placeholder="Chọn loại hóa chất">
-              <Select.Option value="Chất khử trùng">Chất khử trùng</Select.Option>
+              <Select.Option value="Chất khử trùng">
+                Chất khử trùng
+              </Select.Option>
               <Select.Option value="Điều chỉnh pH">Điều chỉnh pH</Select.Option>
               <Select.Option value="Diệt tảo">Diệt tảo</Select.Option>
-              <Select.Option value="Điều chỉnh độ cứng">Điều chỉnh độ cứng</Select.Option>
-              <Select.Option value="Làm trong nước">Làm trong nước</Select.Option>
+              <Select.Option value="Điều chỉnh độ cứng">
+                Điều chỉnh độ cứng
+              </Select.Option>
+              <Select.Option value="Làm trong nước">
+                Làm trong nước
+              </Select.Option>
             </Select>
           </Form.Item>
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="currentStock"
               label="Số lượng hiện có"
-              rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
             >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder="Nhập số lượng" />
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="Nhập số lượng"
+              />
             </Form.Item>
             <Form.Item
               name="unit"
               label="Đơn vị"
-              rules={[{ required: true, message: 'Vui lòng chọn đơn vị!' }]}
+              rules={[{ required: true, message: "Vui lòng chọn đơn vị!" }]}
             >
               <Select placeholder="Chọn đơn vị">
                 <Select.Option value="kg">kg</Select.Option>
@@ -565,29 +656,38 @@ const InventoryStock: React.FC = () => {
             <Form.Item
               name="minThreshold"
               label="Ngưỡng tối thiểu"
-              rules={[{ required: true, message: 'Vui lòng nhập ngưỡng tối thiểu!' }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập ngưỡng tối thiểu!" },
+              ]}
             >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder="Ngưỡng tối thiểu" />
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="Ngưỡng tối thiểu"
+              />
             </Form.Item>
             <Form.Item
               name="reorderLevel"
               label="Mức đặt lại"
-              rules={[{ required: true, message: 'Vui lòng nhập mức đặt lại!' }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập mức đặt lại!" },
+              ]}
             >
-              <InputNumber min={0} style={{ width: '100%' }} placeholder="Mức đặt lại" />
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="Mức đặt lại"
+              />
             </Form.Item>
           </div>
-          <Form.Item
-            name="description"
-            label="Mô tả"
-          >
+          <Form.Item name="description" label="Mô tả">
             <Input.TextArea rows={3} placeholder="Nhập mô tả về hóa chất" />
           </Form.Item>
         </Form>
       </Modal>
       {/* Modal điều chỉnh hóa chất */}
       <Modal
-        title={`Điều chỉnh ${selectedChemical?.chemicalName || 'hóa chất'}`}
+        title={`Điều chỉnh ${selectedChemical?.chemicalName || "hóa chất"}`}
         open={isAdjustModalVisible}
         onCancel={() => setIsAdjustModalVisible(false)}
         onOk={handleAdjustChemical}
@@ -601,18 +701,21 @@ const InventoryStock: React.FC = () => {
           {selectedChemical && (
             <div className="bg-blue-50 p-3 rounded mb-4">
               <p className="text-blue-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity} {selectedChemical.unit}
+                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity}{" "}
+                {selectedChemical.unit}
               </p>
             </div>
           )}
           <Form.Item
-            name="poolsId"  // Thay vì poolId
+            name="poolsId" // Thay vì poolId
             label="Hồ bơi"
-            rules={[{ required: true, message: 'Vui lòng chọn hồ bơi!' }]}
+            rules={[{ required: true, message: "Vui lòng chọn hồ bơi!" }]}
           >
             <Select placeholder="Chọn hồ bơi">
-              {pools.map(pool => (
-                <Select.Option key={pool.poolsId} value={pool.poolsId}>{pool.poolName}</Select.Option>
+              {pools.map((pool) => (
+                <Select.Option key={pool.poolsId} value={pool.poolsId}>
+                  {pool.poolName}
+                </Select.Option>
               ))}
             </Select>
           </Form.Item>
@@ -620,39 +723,41 @@ const InventoryStock: React.FC = () => {
             name="amount"
             label="Lượng sử dụng"
             rules={[
-              { required: true, message: 'Vui lòng nhập lượng sử dụng!' },
+              { required: true, message: "Vui lòng nhập lượng sử dụng!" },
               () => ({
                 validator(_, value) {
                   if (!value || !selectedChemical) {
                     return Promise.resolve();
                   }
                   if (value > selectedChemical.quantity) {
-                    return Promise.reject(new Error('Lượng sử dụng không thể lớn hơn tồn kho!'));
+                    return Promise.reject(
+                      new Error("Lượng sử dụng không thể lớn hơn tồn kho!")
+                    );
                   }
                   return Promise.resolve();
                 },
               }),
             ]}
           >
-            <InputNumber 
-              min={0} 
-              max={selectedChemical?.quantity || 0} 
-              style={{ width: '100%' }} 
-              placeholder="Nhập lượng sử dụng" 
+            <InputNumber
+              min={0}
+              max={selectedChemical?.quantity || 0}
+              style={{ width: "100%" }}
+              placeholder="Nhập lượng sử dụng"
               addonAfter={selectedChemical?.unit}
             />
           </Form.Item>
-          <Form.Item
-            name="note"
-            label="Ghi chú"
-          >
-            <Input.TextArea rows={3} placeholder="Nhập ghi chú về việc điều chỉnh" />
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú về việc điều chỉnh"
+            />
           </Form.Item>
         </Form>
       </Modal>
       {/* Modal nạp thêm hóa chất */}
       <Modal
-        title={`Nạp thêm ${selectedChemical?.chemicalName || 'hóa chất'}`}
+        title={`Nạp thêm ${selectedChemical?.chemicalName || "hóa chất"}`}
         open={isRestockModalVisible}
         onCancel={() => setIsRestockModalVisible(false)}
         onOk={handleRestockChemical}
@@ -666,33 +771,33 @@ const InventoryStock: React.FC = () => {
           {selectedChemical && (
             <div className="bg-green-50 p-3 rounded mb-4">
               <p className="text-green-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity} {selectedChemical.unit}
+                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity}{" "}
+                {selectedChemical.unit}
               </p>
             </div>
           )}
           <Form.Item
             name="amount"
             label="Số lượng nạp thêm"
-            rules={[{ required: true, message: 'Vui lòng nhập số lượng nạp thêm!' }]}
+            rules={[
+              { required: true, message: "Vui lòng nhập số lượng nạp thêm!" },
+            ]}
           >
-            <InputNumber 
-              min={1} 
-              style={{ width: '100%' }} 
-              placeholder="Nhập số lượng nạp thêm" 
+            <InputNumber
+              min={1}
+              style={{ width: "100%" }}
+              placeholder="Nhập số lượng nạp thêm"
               addonAfter={selectedChemical?.unit}
             />
           </Form.Item>
-          <Form.Item
-            name="supplier"
-            label="Nhà cung cấp"
-          >
+          <Form.Item name="supplier" label="Nhà cung cấp">
             <Input placeholder="Nhập tên nhà cung cấp (không bắt buộc)" />
           </Form.Item>
-          <Form.Item
-            name="note"
-            label="Ghi chú"
-          >
-            <Input.TextArea rows={3} placeholder="Nhập ghi chú về việc nạp thêm" />
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú về việc nạp thêm"
+            />
           </Form.Item>
         </Form>
       </Modal>
