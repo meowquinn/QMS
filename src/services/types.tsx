@@ -98,6 +98,5 @@ export interface AdjustmentRecord {
   quantity: number;
   unit: string;
   adjustedBy: number; // staffId
-  cStatus?: string;
   note?: string;
 }

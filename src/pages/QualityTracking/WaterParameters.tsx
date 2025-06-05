@@ -60,8 +60,8 @@ const WaterParameters: React.FC = () => {
     const fetchPools = async () => {
       try {
         setLoading(true);
-        const poolsData = await getAllPools();
-        setPools(poolsData);
+        const poolsResponse = await getAllPools();
+        setPools(poolsResponse.data);
       } catch (error) {
         console.error('Lỗi khi tải danh sách hồ bơi:', error);
         message.error('Không thể tải danh sách hồ bơi');

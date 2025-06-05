@@ -223,7 +223,6 @@ const InventoryStock: React.FC = () => {
           quantity: values.amount,
           unit: selectedChemical.unit,
           adjustedBy: staffId ?? 0, // <-- truyền staffId thực tế ở đây, fallback về 0 nếu undefined
-          cStatus: "Hoàn thành",
           note: values.note,
           action: "Sử dụng",
         };
@@ -245,12 +244,11 @@ const InventoryStock: React.FC = () => {
         const restockData = {
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
-          poolId: 0,
+          poolId: 0, // Nạp thêm không gắn với hồ bơi cụ thể
           poolName: "",
           quantity: values.amount,
           unit: selectedChemical.unit,
           adjustedBy: staffId ?? 0, // staffId thực tế nếu có
-          cStatus: "Hoàn thành",
           note: values.note,
           action: "Nạp thêm",
         };

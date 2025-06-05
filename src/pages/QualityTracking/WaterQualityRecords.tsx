@@ -42,8 +42,8 @@ const WaterQualityRecords: React.FC = () => {
   useEffect(() => {
     const fetchPools = async () => {
       try {
-        const poolsData = await getAllPools();
-        setPools(poolsData);
+        const poolsResponse = await getAllPools();
+        setPools(poolsResponse.data);
       } catch (error) {
         console.error('Không thể tải danh sách hồ bơi:', error);
         message.error('Không thể tải danh sách hồ bơi');
