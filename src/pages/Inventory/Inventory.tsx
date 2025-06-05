@@ -108,6 +108,22 @@ const InventoryStock: React.FC = () => {
       });
   }, []);
 
+      useEffect(() => {
+    getAllPools()
+      .then((res) => {
+        if (res && res.data) {
+          setPools(res.data);
+        } else {
+          console.warn("Invalid chemicals data:", res);
+          setPools([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chemicals:", error);
+        message.error("Không thể tải dữ liệu hóa chất!");
+      });
+  }, []);
+
   useEffect(() => {
     reloadAll();
   }, []);

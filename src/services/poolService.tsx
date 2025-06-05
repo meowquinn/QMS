@@ -6,13 +6,14 @@ import type { Pool } from './types';
  * Lấy danh sách tất cả hồ bơi
  */
 export const getAllPools = async () => {
-  try {
-    const response = await api.get('/Pools');
-    return response.data;
-  } catch (error) {
-    console.error(error);
-    throw new Error('Không thể lấy danh sách hồ bơi');
-  }
+    return api.get('/Pools');
+  // try {
+  //   const response = await api.get('/Pools');
+  //   return response.data;
+  // } catch (error) {
+  //   console.error(error);
+  //   throw new Error('Không thể lấy danh sách hồ bơi');
+  // }
 };
 
 /**
