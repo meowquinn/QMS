@@ -65,11 +65,6 @@ const InventoryStock: React.FC = () => {
         getChemicalHistory(),
       ]);
 
-      // Debug logs
-      console.log(" Chemicals API response:", chemRes);
-      console.log(" Chemicals data:", chemRes?.data);
-      console.log(" Pools API response:", poolRes);
-      console.log(" History API response:", historyRes);
 
       // Xử lý kết quả an toàn
       const chemicalsData = Array.isArray(chemRes?.data)

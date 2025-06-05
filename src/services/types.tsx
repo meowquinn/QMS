@@ -90,7 +90,6 @@ export interface Chemical {
 }
 
 export interface AdjustmentRecord {
-  historyId: number;
   chemicalId: number;
   chemicalName: string;
   action: string; // "Sử dụng" hoặc "Nạp thêm"
@@ -100,6 +99,5 @@ export interface AdjustmentRecord {
   unit: string;
   adjustedBy: number; // staffId
   cStatus?: string;
-  cTimestamp: Date;
   note?: string;
 }
