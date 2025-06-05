@@ -30,3 +30,7 @@ export const getAllChemicals = async () => {
 export const getChemicalHistory = async () => {
   return api.get('/chemicalUsageHistory');
 };
+
+export const getAllPools = async () => {
+  return api.get('/Pools');
+};
