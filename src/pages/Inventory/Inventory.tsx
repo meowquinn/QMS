@@ -37,6 +37,8 @@ import {
   getChemicalHistory,
 } from "../../services/chemicalService";
 import { getAllPools } from "../../services/poolService";
+import {getCurrentUser} from "../../services/authService";
+
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
@@ -54,6 +56,8 @@ const InventoryStock: React.FC = () => {
   );
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
+
+  const staffId = getCurrentUser()?.staffId; // Lấy từ context hoặc redux hoặc props
 
   // Tải dữ liệu hóa chất và hồ bơi
   const reloadAll = async () => {
@@ -202,7 +206,7 @@ const InventoryStock: React.FC = () => {
           poolName: pool ? pool.poolName : "",
           quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: 1,
+          adjustedBy: staffId ?? 0, // <-- truyền staffId thực tế ở đây, fallback về 0 nếu undefined
           cStatus: "Hoàn thành",
           note: values.note,
           action: "Sử dụng",
@@ -703,7 +707,7 @@ const InventoryStock: React.FC = () => {
             </div>
           )}
           <Form.Item
-            name="poolsId" // Thay vì poolId
+            name="poolsId"
             label="Hồ bơi"
             rules={[{ required: true, message: "Vui lòng chọn hồ bơi!" }]}
           >
