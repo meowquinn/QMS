@@ -262,7 +262,7 @@ const InventoryStock: React.FC = () => {
       width: 100,
       render: (text: string) => (
         <span className="text-xs text-gray-500 font-mono">
-          {text.length > 10 ? `${text.substring(0, 10)}...` : text}
+          {text?.length > 10 ? `${text.substring(0, 10)}...` : text}
         </span>
       ),
     },
@@ -300,6 +300,14 @@ const InventoryStock: React.FC = () => {
       ),
     },
     {
+      title: 'Mô tả',
+      dataIndex: 'chDescription',
+      key: 'description',
+      ellipsis: true,
+      render: (text: string) => text || '-',
+      width: 200,
+    },
+    {
       title: 'Thao tác',
       key: 'action',
       render: (_: string, record: Chemical) => (
@@ -312,7 +320,7 @@ const InventoryStock: React.FC = () => {
               onClick={() => showAdjustModal(record)}
               className="bg-blue-500"
               ghost
-          />
+            />
           </Tooltip>
           <Tooltip title="Nạp hóa chất">
             <Button 
@@ -321,7 +329,7 @@ const InventoryStock: React.FC = () => {
               type="primary" 
               size="small"
               className="bg-green-600"
-          />
+            />
           </Tooltip>
           <Popconfirm
             title="Bạn có chắc muốn xóa hóa chất này?"
