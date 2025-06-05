@@ -303,9 +303,14 @@ const InventoryStock: React.FC = () => {
       title: 'Mô tả',
       dataIndex: 'chDescription',
       key: 'description',
-      ellipsis: true,
-      render: (text: string) => text || '-',
-      width: 200,
+      width: 100,
+      render: (text: string | undefined) => (
+        text ? (
+          <Tooltip title={text}>
+            <InfoCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        ) : <span>-</span>
+      ),
     },
     {
       title: 'Thao tác',
