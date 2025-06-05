@@ -804,9 +804,6 @@ const InventoryStock: React.FC = () => {
               addonAfter={selectedChemical?.unit}
             />
           </Form.Item>
-          <Form.Item name="supplier" label="Nhà cung cấp">
-            <Input placeholder="Nhập tên nhà cung cấp (không bắt buộc)" />
-          </Form.Item>
           <Form.Item name="note" label="Ghi chú">
             <Input.TextArea
               rows={3}
