@@ -249,7 +249,7 @@ const InventoryStock: React.FC = () => {
           poolName: "",
           quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: 1, // staffId thực tế nếu có
+          adjustedBy: staffId ?? 0, // staffId thực tế nếu có
           cStatus: "Hoàn thành",
           note: values.note,
           action: "Nạp thêm",
