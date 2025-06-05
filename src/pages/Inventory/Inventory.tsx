@@ -38,24 +38,58 @@ const InventoryStock: React.FC = () => {
         getAllPools(),
         getChemicalHistory()
       ]);
-      setChemicals(chemRes.data);
-      setPools(poolRes.data);
-      setAdjustmentHistory(historyRes.data);
+      
+      // Debug logs
+      console.log("Chemicals API response:", chemRes);
+      console.log("Chemicals data:", chemRes?.data);
+      console.log("Pools API response:", poolRes);
+      console.log("History API response:", historyRes);
+      
+      // Xử lý kết quả an toàn
+      const chemicalsData = Array.isArray(chemRes?.data) ? chemRes.data : 
+                           (chemRes && typeof chemRes === 'object' ? (chemRes.data || []) : []);
+      
+      console.log("Processed chemicals data:", chemicalsData);
+      
+      setChemicals(chemicalsData);
+      setPools(Array.isArray(poolRes?.data) ? poolRes.data : []);
+      setAdjustmentHistory(Array.isArray(historyRes?.data) ? historyRes.data : []);
     } catch (error) {
+      console.error("Error in reloadAll:", error);
       message.error('Không thể tải dữ liệu hóa chất hoặc lịch sử!');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     reloadAll();
   }, []);
 
-  // Lọc hóa chất theo tìm kiếm
-  const filteredChemicals = chemicals.filter(chemical => 
-    chemical.chemicalName.toLowerCase().includes(searchText.toLowerCase()) || 
-    chemical.chemicalType.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Lọc hóa chất theo tìm kiếm - với xử lý an toàn
+  const filteredChemicals = React.useMemo(() => {
+    console.log("Current chemicals state:", chemicals);
+    
+    if (!Array.isArray(chemicals)) {
+      console.warn("chemicals is not an array:", chemicals);
+      return [];
+    }
+    
+    const filtered = chemicals.filter(chemical => {
+      if (!chemical) return false;
+      
+      const nameMatch = chemical.chemicalName && 
+        chemical.chemicalName.toLowerCase().includes(searchText.toLowerCase());
+      
+      const typeMatch = chemical.chemicalType && 
+        chemical.chemicalType.toLowerCase().includes(searchText.toLowerCase());
+      
+      return nameMatch || typeMatch;
+    });
+    
+    console.log("Filtered chemicals:", filtered);
+    return filtered;
+  }, [chemicals, searchText]);
 
   // Hiển thị modal thêm hóa chất mới
   const showAddModal = () => {
@@ -414,10 +448,11 @@ const InventoryStock: React.FC = () => {
               <Table 
                 columns={chemicalColumns} 
                 dataSource={filteredChemicals}
-                rowKey="chemicalId"
+                rowKey={record => record?.chemicalId?.toString() || Math.random().toString()}
                 loading={loading}
                 pagination={{ pageSize: 6 }}
                 scroll={{ x: 'max-content' }}
+                locale={{ emptyText: 'Không có dữ liệu hóa chất' }}
               />
             </div>
           </Card>
