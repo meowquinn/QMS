@@ -39,6 +39,8 @@ import {
 } from "../../services/chemicalService";
 import { getAllPools } from "../../services/poolService";
 import { getCurrentUser } from "../../services/authService";
+// Import API cần thiết
+import { getAllStaff } from "../../services/staffService"; 
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
@@ -53,6 +55,7 @@ const InventoryStock: React.FC = () => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
   const [actionFilter, setActionFilter] = useState<string | null>(null); // Thêm filter cho lịch sử
+  const [staffMap, setStaffMap] = useState<{[key: number]: string}>({});
 
   const staffId = getCurrentUser()?.staffId || 0;
 
@@ -492,6 +495,10 @@ const InventoryStock: React.FC = () => {
       title: "Người thực hiện",
       dataIndex: "adjustedBy",
       key: "adjustedBy",
+      render: (staffId: number) => {
+        // Hiển thị tên nhân viên nếu có, ngược lại hiển thị ID
+        return staffMap[staffId] || `Nhân viên #${staffId}`;
+      }
     },
     {
       title: "Ghi chú",
@@ -587,6 +594,23 @@ const InventoryStock: React.FC = () => {
       ),
     },
   ];
+
+  // Tải thông tin nhân viên khi component mount
+  useEffect(() => {
+    getAllStaff()
+      .then((res) => {
+        const staffObj: {[key: number]: string} = {};
+        if (Array.isArray(res?.data)) {
+          res.data.forEach((staff: { staffId: number; fullName?: string }) => {
+            staffObj[staff.staffId] = staff.fullName || `Nhân viên #${staff.staffId}`;
+          });
+        }
+        setStaffMap(staffObj);
+      })
+      .catch((error) => {
+        console.error("Error loading staff data:", error);
+      });
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
