@@ -45,7 +45,6 @@ const InventoryStock: React.FC = () => {
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>("");
-  const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false); // Sửa lại khai báo state
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isRestockModalVisible, setIsRestockModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -134,30 +133,6 @@ const InventoryStock: React.FC = () => {
   const showAddModal = () => {
     form.resetFields();
     setIsAddModalVisible(true);
-  };
-
-  // Hiển thị modal điều chỉnh hóa chất
-  const showAdjustModal = (chemical: Chemical) => {
-    setSelectedChemical(chemical);
-    form.resetFields();
-    form.setFieldsValue({
-      chemicalId: chemical.chemicalId,
-      amount: 0,
-      unit: chemical.unit,
-    });
-    setIsAdjustModalVisible(true);
-  };
-
-  // Hiển thị modal nạp thêm hóa chất
-  const showRestockModal = (chemical: Chemical) => {
-    setSelectedChemical(chemical);
-    form.resetFields();
-    form.setFieldsValue({
-      chemicalId: chemical.chemicalId,
-      amount: 0,
-      unit: chemical.unit,
-    });
-    setIsRestockModalVisible(true);
   };
 
   // Hiển thị modal chỉnh sửa
@@ -383,19 +358,14 @@ const InventoryStock: React.FC = () => {
       key: "action",
       render: (_: string, record: Chemical) => (
         <Space size="middle">
-          <Tooltip title="Sử dụng hóa chất">
+          {/* Xóa nút Điều chỉnh/Sử dụng hóa chất */}
+          <Tooltip title="Nạp thêm hóa chất">
             <Button
-              icon={<EditOutlined />}
-              type="primary"
-              size="small"
-              onClick={() => showAdjustModal(record)}
-              className="bg-blue-500"
-              ghost
-            />
-          </Tooltip>
-          <Tooltip title="Nạp hóa chất">
-            <Button
-              onClick={() => showRestockModal(record)}
+              onClick={() => {
+                setSelectedChemical(record);
+                form.resetFields();
+                setIsRestockModalVisible(true);
+              }}
               icon={<PlusCircleOutlined />}
               type="primary"
               size="small"
@@ -816,72 +786,6 @@ const InventoryStock: React.FC = () => {
             <Input.TextArea
               rows={3}
               placeholder="Nhập ghi chú về việc nạp thêm"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-      
-      {/* Modal điều chỉnh (sử dụng) hóa chất */}
-      <Modal
-        title={`Sử dụng ${selectedChemical?.chemicalName || "hóa chất"}`}
-        open={isAdjustModalVisible}
-        onCancel={() => setIsAdjustModalVisible(false)}
-        onOk={handleAdjustChemical}
-        okText="Xác nhận"
-        cancelText="Hủy"
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="chemicalId" hidden>
-            <Input />
-          </Form.Item>
-          {selectedChemical && (
-            <div className="bg-blue-50 p-3 rounded mb-4">
-              <p className="text-blue-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity}{" "}
-                {selectedChemical.unit}
-              </p>
-            </div>
-          )}
-          <Form.Item
-            name="poolsId"
-            label="Hồ bơi"
-            rules={[{ required: true, message: "Vui lòng chọn hồ bơi!" }]}
-          >
-            <Select placeholder="Chọn hồ bơi">
-              {pools.map((pool) => (
-                <Select.Option key={pool.poolsId} value={pool.poolsId}>
-                  {pool.poolName}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="amount"
-            label="Số lượng sử dụng"
-            rules={[
-              { required: true, message: "Vui lòng nhập số lượng sử dụng!" },
-              {
-                validator: (_, value) => {
-                  if (selectedChemical && value > selectedChemical.quantity) {
-                    return Promise.reject("Số lượng vượt quá tồn kho!");
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <InputNumber
-              min={1}
-              max={selectedChemical?.quantity}
-              style={{ width: "100%" }}
-              placeholder="Nhập số lượng sử dụng"
-              addonAfter={selectedChemical?.unit}
-            />
-          </Form.Item>
-          <Form.Item name="note" label="Ghi chú">
-            <Input.TextArea
-              rows={3}
-              placeholder="Nhập ghi chú về việc sử dụng"
             />
           </Form.Item>
         </Form>
