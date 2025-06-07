@@ -23,14 +23,14 @@ export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | '
 
 // Sử dụng nhiều hóa chất cho một lần xử lý
 export const applyMultipleChemicalsForPool = async (
-  chemicalId: number, // Thêm tham số này để URL hoạt động đúng
   data: {
     chemicals: Array<{
+      chemicalId: number;
       quantity: number;
     }>;
   }
 ) => {
-  return api.post(`/Chemicals/${chemicalId}/applychemical`, data);
+  return api.post('/Chemicals/applychemical', data);
 };
 
 // Lấy danh sách hóa chất

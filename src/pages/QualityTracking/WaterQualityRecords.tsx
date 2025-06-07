@@ -485,8 +485,9 @@ const WaterQualityRecords: React.FC = () => {
             
             
             // Gọi API một lần duy nhất với tất cả hóa chất
-            await applyMultipleChemicalsForPool(selectedRecord.poolId, {
+            await applyMultipleChemicalsForPool({
               chemicals: selectedChemicals.map(item => ({
+                chemicalId: item.chemicalId, // Thêm chemicalId vào mỗi item
                 quantity: item.amount
               }))
             });
