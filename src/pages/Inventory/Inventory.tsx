@@ -430,33 +430,21 @@ const InventoryStock: React.FC = () => {
       dataIndex: "historyId",
       key: "id",
       width: 80,
-      render: (historyId: number | string) => (
+      render: (id: number | undefined) => (
         <span className="text-xs text-gray-500 font-mono">
-          {historyId?.toString() || "-"}
+          {id || "-"}
         </span>
       ),
     },
     {
-      title: "Thời gian",
-      dataIndex: "cTimestamp",
-      key: "timestamp",
-      render: (timestamp: string | Date) => {
-        try {
-          const date =
-            typeof timestamp === "string" ? new Date(timestamp) : timestamp;
-          return (
-            <span>
-              {date.toLocaleDateString()}{" "}
-              {date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          );
-        } catch (error) {
-          return <span>Invalid date</span>;
-        }
-      },
+      title: 'Thời gian',
+      dataIndex: 'cTimestamp',
+      key: 'cTimestamp',
+      render: (timestamp: Date) => (
+        <span>{new Date(timestamp).toLocaleString('vi-VN')}</span>
+      ),
+      sorter: (a: AdjustmentRecord, b: AdjustmentRecord) => new Date(a.cTimestamp).getTime() - new Date(b.cTimestamp).getTime(),
+      defaultSortOrder: 'descend',
     },
     {
       title: "Hóa chất",
