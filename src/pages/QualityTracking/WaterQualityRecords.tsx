@@ -505,6 +505,7 @@ const WaterQualityRecords: React.FC = () => {
               
               // Gọi API tạo lịch sử sử dụng hóa chất
               await createChemicalUsageHistory({
+                historyId: 0,
                 chemicalId: item.chemicalId,
                 chemicalName: selectedChemical.chemicalName,
                 poolId: selectedRecord.poolId,

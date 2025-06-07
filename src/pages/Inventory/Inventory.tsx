@@ -234,6 +234,7 @@ const InventoryStock: React.FC = () => {
         
         // Tạo lịch sử sử dụng
         await createChemicalUsageHistory({
+          historyId: 0, // ID sẽ được tự động tạo
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
           poolId: null, 
