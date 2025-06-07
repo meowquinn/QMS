@@ -16,11 +16,6 @@ export const restockChemical = async (data: Omit<AdjustmentRecord, 'historyId' |
   return api.post('/chemicalUsageHistory', data);
 };
 
-// Sử dụng hóa chất (ghi vào lịch sử)
-export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
-  return api.post('/chemicalUsageHistory', data);
-};
-
 // Sử dụng nhiều hóa chất cho một lần xử lý
 export const applyMultipleChemicalsForPool = async (
   data: {
@@ -43,7 +38,17 @@ export const getChemicalHistory = async () => {
   return api.get('/chemicalUsageHistory');
 };
 
+// Tạo lịch sử sử dụng hóa chất
+export const createChemicalUsageHistory = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
+  return api.post('/chemicalUsageHistory', data);
+};
+
 // Lấy danh sách hồ bơi
 export const getAllPools = async () => {
   return api.get('/Pools');
+};
+
+// Cập nhật thông tin hóa chất
+export const updateChemical = async (chemical: Chemical) => {
+  return api.put(`/chemicals/${chemical.chemicalId}`, chemical);
 };

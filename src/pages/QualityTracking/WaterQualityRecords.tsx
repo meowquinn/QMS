@@ -5,12 +5,16 @@ import {
   InfoCircleOutlined, WarningOutlined, AlertOutlined, 
   CheckCircleOutlined
 } from '@ant-design/icons';
-import { getWaterQualityHistory } from '../../services/waterQualityService';
+import { getWaterQualityHistory, updateWaterQualityResolved } from '../../services/waterQualityService';
 import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool, WaterQualityRecord, Chemical } from '../../services/types';
-import { applyMultipleChemicalsForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
-import { getAllChemicals } from '../../services/chemicalService'; // Lấy danh sách hóa chất
+import { 
+  getAllChemicals, 
+  applyMultipleChemicalsForPool, 
+  createChemicalUsageHistory 
+} from '../../services/chemicalService'; // Lấy danh sách hóa chất
+import { getCurrentUser } from '../../services/authService';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -34,6 +38,8 @@ const WaterQualityRecords: React.FC = () => {
     chlorine: { min: 0.5, max: 3.0 },
     temperature: { min: 26.0, max: 32.0 }
   };
+
+  const staffId = getCurrentUser()?.staffId; // Lấy staffId từ user hiện tại
 
   // Thêm vào đầu component WaterQualityRecords
   const [isProcessModalVisible, setIsProcessModalVisible] = useState(false);
@@ -62,38 +68,39 @@ const WaterQualityRecords: React.FC = () => {
   }, []);
 
   // Lấy dữ liệu chất lượng nước từ API
-  useEffect(() => {
-    const fetchWaterQualityData = async () => {
-      try {
-        setLoading(true);
-        
-        // Tạo bộ lọc cho API từ state
-        // Đảm bảo startDate và endDate không phải là null khi truyền vào API
-        const filters: {
-          poolId?: number;
-          startDate?: Date;
-          endDate?: Date;
-        } = {};
-        if (selectedPool !== 'all') {
-          filters.poolId = parseInt(selectedPool);
-        }
-        if (dateRange[0] && dateRange[1]) {
-          filters.startDate = dateRange[0] || undefined;
-          filters.endDate = dateRange[1] || undefined;
-        }
-        
-        const data = await getWaterQualityHistory(filters);
-        setRecords(data);
-        setFilteredRecords(data);
-      } catch (error) {
-        console.error('Lỗi khi tải dữ liệu chất lượng nước:', error);
-        message.error('Không thể tải dữ liệu chất lượng nước');
-      } finally {
-        setLoading(false);
+  const reloadRecords = async () => {
+    try {
+      setLoading(true);
+      
+      // Tạo bộ lọc cho API từ state
+      // Đảm bảo startDate và endDate không phải là null khi truyền vào API
+      const filters: {
+        poolId?: number;
+        startDate?: Date;
+        endDate?: Date;
+      } = {};
+      if (selectedPool !== 'all') {
+        filters.poolId = parseInt(selectedPool);
       }
-    };
+      if (dateRange[0] && dateRange[1]) {
+        filters.startDate = dateRange[0] || undefined;
+        filters.endDate = dateRange[1] || undefined;
+      }
+      
+      const data = await getWaterQualityHistory(filters);
+      setRecords(data);
+      setFilteredRecords(data);
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu chất lượng nước:', error);
+      message.error('Không thể tải dữ liệu chất lượng nước');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchWaterQualityData();
+  useEffect(() => {
+    reloadRecords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPool, dateRange]);
 
   // Lấy danh sách nhân viên và tạo map staffId -> fullName
@@ -483,20 +490,49 @@ const WaterQualityRecords: React.FC = () => {
               }
             }
             
-            
             // Gọi API một lần duy nhất với tất cả hóa chất
             await applyMultipleChemicalsForPool({
               chemicals: selectedChemicals.map(item => ({
-                chemicalId: item.chemicalId, // Thêm chemicalId vào mỗi item
+                chemicalId: item.chemicalId,
                 quantity: item.amount
               }))
             });
             
+            // ===== THÊM MỚI: Tạo lịch sử sử dụng cho từng hóa chất =====
+            for (const item of selectedChemicals) {
+              const selectedChemical = chemicals.find(c => c.chemicalId === item.chemicalId);
+              if (!selectedChemical) continue;
+              
+              // Gọi API tạo lịch sử sử dụng hóa chất
+              await createChemicalUsageHistory({
+                chemicalId: item.chemicalId,
+                chemicalName: selectedChemical.chemicalName,
+                poolId: selectedRecord.poolId,
+                poolName: selectedRecord.poolName,
+                quantity: item.amount,
+                unit: selectedChemical.unit,
+                adjustedBy: staffId ?? 0,
+                note: `Xử lý chỉ số bất thường ID: ${selectedRecord.parameterId}`,
+                action: "Sử dụng"
+              });
+            }
+            // ===== KẾT THÚC PHẦN THÊM MỚI =====
+            
             message.success("Đã xử lý và cập nhật kho!");
             setIsProcessModalVisible(false);
             
-            // Reload data nếu cần
-            // reloadRecords();
+            // Cập nhật trạng thái bản ghi đo nếu cần
+            if (selectedRecord && updateWaterQualityResolved) {
+              await updateWaterQualityResolved(selectedRecord.parameterId, {
+                resolved: true,
+                resolvedBy: staffId ?? 0
+              });
+            }
+            
+            // Reload data
+            if (reloadRecords) {
+              reloadRecords();
+            }
           } catch (error) {
             message.error("Xử lý thất bại: " + (error instanceof Error ? error.message : String(error)));
           }

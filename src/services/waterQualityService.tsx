@@ -103,11 +103,16 @@ export const getWaterQualityDetail = async (parameterId: number) => {
 /**
  * Cập nhật trạng thái đã xử lý cho bản ghi
  */
-export const updateWaterQualityResolved = async (parameterId: number, resolved: boolean) => {
+export const updateWaterQualityResolved = async (
+  parameterId: number, 
+  data: {
+    resolved: boolean;
+    resolvedBy?: number;
+    note?: string;
+  }
+) => {
   try {
-    const response = await api.patch(`/WaterQualityParameters/${parameterId}/resolve`, {
-      resolved
-    });
+    const response = await api.patch(`/WaterQualityParameters/${parameterId}/resolve`, data);
     return response.data;
   } catch (error) {
     console.error('Không thể cập nhật trạng thái đã xử lý cho bản ghi:', error);

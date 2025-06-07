@@ -99,6 +99,7 @@ export interface AdjustmentRecord {
   quantity: number;
   unit: string;
   adjustedBy: number; // staffId
+  cTimestamp: Date; // Ngày giờ thực hiện
   note?: string;
 }
 
@@ -114,4 +115,18 @@ export interface ChemicalUsageHistory {
   adjustedBy: number; // staffId
   cTimestamp: Date; // Ngày giờ thực hiện
   note?: string;
+}
+
+export interface createChemicalUsageHistory {
+  chemicalId: number;
+  chemicalName: string;
+  action: string;
+  poolId: number;
+  poolName: string;
+  quantity: number;
+  unit: string;
+  adjustedBy: number;
+  cStatus: string;
+  note?: string;
+  cTimestamp: Date;
 }

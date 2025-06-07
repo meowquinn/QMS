@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
   Card,
@@ -32,32 +32,29 @@ import {
   addChemical,
   deleteChemical,
   restockChemical,
-  applyChemical,
   getAllChemicals,
   getChemicalHistory,
+  updateChemical,
 } from "../../services/chemicalService";
 import { getAllPools } from "../../services/poolService";
-import {getCurrentUser} from "../../services/authService";
-
+import { getCurrentUser } from "../../services/authService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
-  const [adjustmentHistory, setAdjustmentHistory] = useState<
-    AdjustmentRecord[]
-  >([]);
-  const [pools, setPools] = useState<Pool[]>([]);
+  const [pools, setPools] = useState<Pool[]>([]); // Thêm state pools
+  const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>("");
-  const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false);
+  const [isAdjustModalVisible, setIsAdjustModalVisible] = useState(false); // Sửa lại khai báo state
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isRestockModalVisible, setIsRestockModalVisible] = useState(false);
-  const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(
-    null
-  );
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
+  const [actionFilter, setActionFilter] = useState<string | null>(null); // Thêm filter cho lịch sử
 
-  const staffId = getCurrentUser()?.staffId; // Lấy từ context hoặc redux hoặc props
+  const staffId = getCurrentUser()?.staffId || 0;
 
   // Tải dữ liệu hóa chất và hồ bơi
   const reloadAll = async () => {
@@ -69,21 +66,10 @@ const InventoryStock: React.FC = () => {
         getChemicalHistory(),
       ]);
 
-
       // Xử lý kết quả an toàn
-      const chemicalsData = Array.isArray(chemRes?.data)
-        ? chemRes.data
-        : chemRes && typeof chemRes === "object"
-        ? chemRes.data || []
-        : [];
-
-      console.log("Processed chemicals data:", chemicalsData);
-
-      setChemicals(chemicalsData);
+      setChemicals(Array.isArray(chemRes?.data) ? chemRes.data : []);
       setPools(Array.isArray(poolRes?.data) ? poolRes.data : []);
-      setAdjustmentHistory(
-        Array.isArray(historyRes?.data) ? historyRes.data : []
-      );
+      setAdjustmentHistory(Array.isArray(historyRes?.data) ? historyRes.data : []);
     } catch (error) {
       console.error("Error in reloadAll:", error);
       message.error("Không thể tải dữ liệu hóa chất hoặc lịch sử!");
@@ -92,52 +78,33 @@ const InventoryStock: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    getAllChemicals()
-      .then((res) => {
-        if (res && res.data) {
-          setChemicals(res.data);
-        } else {
-          console.warn("Invalid chemicals data:", res);
-          setChemicals([]);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching chemicals:", error);
-        message.error("Không thể tải dữ liệu hóa chất!");
-      });
-  }, []);
-
-      useEffect(() => {
-    getAllPools()
-      .then((res) => {
-        if (res && res.data) {
-          setPools(res.data);
-        } else {
-          console.warn("Invalid chemicals data:", res);
-          setPools([]);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching chemicals:", error);
-        message.error("Không thể tải dữ liệu hóa chất!");
-      });
-  }, []);
-
+  // Chỉ load dữ liệu một lần khi component mount
   useEffect(() => {
     reloadAll();
   }, []);
 
-  // Lọc hóa chất theo tìm kiếm - với xử lý an toàn
-  const filteredChemicals = React.useMemo(() => {
-    console.log("Current chemicals state:", chemicals);
+  // Load lại lịch sử khi chuyển tab
+  useEffect(() => {
+    if (activeTab === 'history') {
+      getChemicalHistory()
+        .then((res) => {
+          if (res && res.data) {
+            setAdjustmentHistory(res.data);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching history:", error);
+        });
+    }
+  }, [activeTab]);
 
+  // Lọc hóa chất theo tìm kiếm
+  const filteredChemicals = useMemo(() => {
     if (!Array.isArray(chemicals)) {
-      console.warn("chemicals is not an array:", chemicals);
       return [];
     }
 
-    const filtered = chemicals.filter((chemical) => {
+    return chemicals.filter((chemical) => {
       if (!chemical) return false;
 
       const nameMatch =
@@ -150,10 +117,18 @@ const InventoryStock: React.FC = () => {
 
       return nameMatch || typeMatch;
     });
-
-    console.log("Filtered chemicals:", filtered);
-    return filtered;
   }, [chemicals, searchText]);
+
+  // Filter lịch sử theo searchText và actionFilter
+  const filteredHistory = useMemo(() => {
+    return adjustmentHistory.filter(
+      (record) => 
+        (searchText === "" || 
+          record.chemicalName.toLowerCase().includes(searchText.toLowerCase()) ||
+          (record.poolName && record.poolName.toLowerCase().includes(searchText.toLowerCase()))) &&
+        (actionFilter === null || record.action === actionFilter)
+    ).sort((a, b) => new Date(b.cTimestamp || Date.now()).getTime() - new Date(a.cTimestamp || Date.now()).getTime());
+  }, [adjustmentHistory, searchText, actionFilter]);
 
   // Hiển thị modal thêm hóa chất mới
   const showAddModal = () => {
@@ -185,6 +160,46 @@ const InventoryStock: React.FC = () => {
     setIsRestockModalVisible(true);
   };
 
+  // Hiển thị modal chỉnh sửa
+  const showEditModal = (chemical: Chemical) => {
+    setSelectedChemical(chemical);
+    form.resetFields();
+    form.setFieldsValue({
+      chemicalId: chemical.chemicalId,
+      name: chemical.chemicalName,
+      type: chemical.chemicalType,
+      minThreshold: chemical.minThreshold,
+      reorderLevel: chemical.reorderLevel,
+      description: chemical.chDescription
+    });
+    setIsEditModalVisible(true);
+  };
+  // Xử lý cập nhật hóa chất
+  const handleEditChemical = async () => {
+    try {
+      const values = await form.validateFields();
+      if (selectedChemical) {
+        const updatedChemical = {
+          chemicalId: selectedChemical.chemicalId,
+          chemicalName: values.name,
+          chemicalType: values.type,
+          quantity: selectedChemical.quantity,
+          unit: selectedChemical.unit,
+          minThreshold: values.minThreshold,
+          reorderLevel: values.reorderLevel,
+          chDescription: values.description,
+        };
+        
+        await updateChemical(updatedChemical);
+        message.success("Đã cập nhật thông tin hóa chất thành công!");
+        setIsEditModalVisible(false);
+        await reloadAll();
+      }
+    } catch (error) {
+      message.error("Cập nhật thông tin hóa chất thất bại!");
+    }
+  };
+
   // Thêm hóa chất mới
   const handleAddChemical = async () => {
     try {
@@ -208,34 +223,6 @@ const InventoryStock: React.FC = () => {
     }
   };
 
-  // Sử dụng hóa chất
-  const handleAdjustChemical = async () => {
-    try {
-      const values = await form.validateFields();
-      if (selectedChemical) {
-        // Lấy đúng trường poolsId từ values
-        const pool = pools.find((pool) => pool.poolsId === values.poolsId);
-        const usageData = {
-          chemicalId: selectedChemical.chemicalId,
-          chemicalName: selectedChemical.chemicalName,
-          poolId: pool ? pool.poolsId : 0,
-          poolName: pool ? pool.poolName : "",
-          quantity: values.amount,
-          unit: selectedChemical.unit,
-          adjustedBy: staffId ?? 0, // <-- truyền staffId thực tế ở đây, fallback về 0 nếu undefined
-          note: values.note,
-          action: "Sử dụng",
-        };
-        await applyChemical(usageData);
-        setIsAdjustModalVisible(false);
-        message.success("Đã điều chỉnh hóa chất thành công!");
-        await reloadAll();
-      }
-    } catch (error) {
-      message.error("Điều chỉnh hóa chất thất bại!");
-    }
-  };
-
   // Nạp thêm hóa chất
   const handleRestockChemical = async () => {
     try {
@@ -244,11 +231,12 @@ const InventoryStock: React.FC = () => {
         const restockData = {
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
-          poolId: 0, // Nạp thêm không gắn với hồ bơi cụ thể
+          poolId: 0,
           poolName: "",
           quantity: values.amount,
           unit: selectedChemical.unit,
-          adjustedBy: staffId ?? 0, // staffId thực tế nếu có
+          adjustedBy: staffId,
+          cStatus: "Hoàn thành",
           note: values.note,
           action: "Nạp thêm",
         };
@@ -414,6 +402,15 @@ const InventoryStock: React.FC = () => {
               className="bg-green-600"
             />
           </Tooltip>
+          <Tooltip title="Chỉnh sửa thông tin hóa chất">
+            <Button
+              onClick={() => showEditModal(record)}
+              icon={<EditOutlined />}
+              type="default"
+              size="small"
+              className="bg-yellow-500"
+            />
+          </Tooltip>
           <Popconfirm
             title="Bạn có chắc muốn xóa hóa chất này?"
             okText="Xóa"
@@ -508,14 +505,6 @@ const InventoryStock: React.FC = () => {
     },
   ];
 
-  // Filter lịch sử theo searchText
-  const filteredHistory = adjustmentHistory.filter(
-    (record) =>
-      record.chemicalName.toLowerCase().includes(searchText.toLowerCase()) ||
-      (record.poolName &&
-        record.poolName.toLowerCase().includes(searchText.toLowerCase()))
-  );
-
   const items = [
     {
       key: "inventory",
@@ -578,6 +567,16 @@ const InventoryStock: React.FC = () => {
               onChange={(e) => setSearchText(e.target.value)}
               className="w-full md:w-64"
             />
+            <Select
+              placeholder="Lọc theo loại thao tác"
+              style={{ width: 180 }}
+              value={actionFilter}
+              onChange={(value) => setActionFilter(value)}
+              allowClear
+            >
+              <Select.Option value="Sử dụng">Sử dụng</Select.Option>
+              <Select.Option value="Nạp thêm">Nạp thêm</Select.Option>
+            </Select>
           </div>
           <Card className="mt-4 shadow-md">
             <Table
@@ -604,6 +603,7 @@ const InventoryStock: React.FC = () => {
         </p>
       </div>
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
+      
       {/* Modal thêm hóa chất mới */}
       <Modal
         title="Thêm hóa chất mới"
@@ -699,76 +699,84 @@ const InventoryStock: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-      {/* Modal điều chỉnh hóa chất */}
+      
+      {/* Modal chỉnh sửa thông tin hóa chất */}
       <Modal
-        title={`Điều chỉnh ${selectedChemical?.chemicalName || "hóa chất"}`}
-        open={isAdjustModalVisible}
-        onCancel={() => setIsAdjustModalVisible(false)}
-        onOk={handleAdjustChemical}
-        okText="Xác nhận"
+        title={`Chỉnh sửa thông tin ${selectedChemical?.chemicalName || "hóa chất"}`}
+        open={isEditModalVisible}
+        onCancel={() => setIsEditModalVisible(false)}
+        onOk={handleEditChemical}
+        okText="Cập nhật"
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical">
           <Form.Item name="chemicalId" hidden>
             <Input />
           </Form.Item>
-          {selectedChemical && (
-            <div className="bg-blue-50 p-3 rounded mb-4">
-              <p className="text-blue-800">
-                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity}{" "}
-                {selectedChemical.unit}
-              </p>
-            </div>
-          )}
           <Form.Item
-            name="poolsId"
-            label="Hồ bơi"
-            rules={[{ required: true, message: "Vui lòng chọn hồ bơi!" }]}
+            name="name"
+            label="Tên hóa chất"
+            rules={[{ required: true, message: "Vui lòng nhập tên hóa chất!" }]}
           >
-            <Select placeholder="Chọn hồ bơi">
-              {pools.map((pool) => (
-                <Select.Option key={pool.poolsId} value={pool.poolsId}>
-                  {pool.poolName}
-                </Select.Option>
-              ))}
-            </Select>
+            <Input placeholder="Nhập tên hóa chất" />
           </Form.Item>
           <Form.Item
-            name="amount"
-            label="Lượng sử dụng"
+            name="type"
+            label="Loại hóa chất"
             rules={[
-              { required: true, message: "Vui lòng nhập lượng sử dụng!" },
-              () => ({
-                validator(_, value) {
-                  if (!value || !selectedChemical) {
-                    return Promise.resolve();
-                  }
-                  if (value > selectedChemical.quantity) {
-                    return Promise.reject(
-                      new Error("Lượng sử dụng không thể lớn hơn tồn kho!")
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              }),
+              { required: true, message: "Vui lòng chọn loại hóa chất!" },
             ]}
           >
-            <InputNumber
-              min={0}
-              max={selectedChemical?.quantity || 0}
-              style={{ width: "100%" }}
-              placeholder="Nhập lượng sử dụng"
-              addonAfter={selectedChemical?.unit}
-            />
+            <Select placeholder="Chọn loại hóa chất">
+              <Select.Option value="Chất khử trùng">
+                Chất khử trùng
+              </Select.Option>
+              <Select.Option value="Điều chỉnh pH">Điều chỉnh pH</Select.Option>
+              <Select.Option value="Diệt tảo">Diệt tảo</Select.Option>
+              <Select.Option value="Điều chỉnh độ cứng">
+                Điều chỉnh độ cứng
+              </Select.Option>
+              <Select.Option value="Làm trong nước">
+                Làm trong nước
+              </Select.Option>
+            </Select>
           </Form.Item>
-          <Form.Item name="note" label="Ghi chú">
-            <Input.TextArea
-              rows={3}
-              placeholder="Nhập ghi chú về việc điều chỉnh"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              name="minThreshold"
+              label="Ngưỡng tối thiểu"
+              rules={[
+                { required: true, message: "Vui lòng nhập ngưỡng tối thiểu!" },
+              ]}
+            >
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="Ngưỡng tối thiểu"
+                addonAfter={selectedChemical?.unit}
+              />
+            </Form.Item>
+            <Form.Item
+              name="reorderLevel"
+              label="Mức đặt lại"
+              rules={[
+                { required: true, message: "Vui lòng nhập mức đặt lại!" },
+              ]}
+            >
+              <InputNumber
+                min={0}
+                style={{ width: "100%" }}
+                placeholder="Mức đặt lại"
+                addonAfter={selectedChemical?.unit}
+              />
+            </Form.Item>
+          </div>
+          <Form.Item name="description" label="Mô tả">
+            <Input.TextArea rows={3} placeholder="Nhập mô tả về hóa chất" />
           </Form.Item>
         </Form>
       </Modal>
+      
       {/* Modal nạp thêm hóa chất */}
       <Modal
         title={`Nạp thêm ${selectedChemical?.chemicalName || "hóa chất"}`}
@@ -808,6 +816,72 @@ const InventoryStock: React.FC = () => {
             <Input.TextArea
               rows={3}
               placeholder="Nhập ghi chú về việc nạp thêm"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+      
+      {/* Modal điều chỉnh (sử dụng) hóa chất */}
+      <Modal
+        title={`Sử dụng ${selectedChemical?.chemicalName || "hóa chất"}`}
+        open={isAdjustModalVisible}
+        onCancel={() => setIsAdjustModalVisible(false)}
+        onOk={handleAdjustChemical}
+        okText="Xác nhận"
+        cancelText="Hủy"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="chemicalId" hidden>
+            <Input />
+          </Form.Item>
+          {selectedChemical && (
+            <div className="bg-blue-50 p-3 rounded mb-4">
+              <p className="text-blue-800">
+                <strong>Tồn kho hiện tại:</strong> {selectedChemical.quantity}{" "}
+                {selectedChemical.unit}
+              </p>
+            </div>
+          )}
+          <Form.Item
+            name="poolsId"
+            label="Hồ bơi"
+            rules={[{ required: true, message: "Vui lòng chọn hồ bơi!" }]}
+          >
+            <Select placeholder="Chọn hồ bơi">
+              {pools.map((pool) => (
+                <Select.Option key={pool.poolsId} value={pool.poolsId}>
+                  {pool.poolName}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="amount"
+            label="Số lượng sử dụng"
+            rules={[
+              { required: true, message: "Vui lòng nhập số lượng sử dụng!" },
+              {
+                validator: (_, value) => {
+                  if (selectedChemical && value > selectedChemical.quantity) {
+                    return Promise.reject("Số lượng vượt quá tồn kho!");
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <InputNumber
+              min={1}
+              max={selectedChemical?.quantity}
+              style={{ width: "100%" }}
+              placeholder="Nhập số lượng sử dụng"
+              addonAfter={selectedChemical?.unit}
+            />
+          </Form.Item>
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú về việc sử dụng"
             />
           </Form.Item>
         </Form>
