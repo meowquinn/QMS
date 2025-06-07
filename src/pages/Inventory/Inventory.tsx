@@ -240,7 +240,6 @@ const InventoryStock: React.FC = () => {
           adjustedBy: staffId,
           note: values.note || "Nạp thêm hóa chất",
           action: "Nạp thêm",
-          cStatus: "Hoàn thành"
         });
 
         setIsRestockModalVisible(false);
