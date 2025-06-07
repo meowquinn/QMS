@@ -9,7 +9,8 @@ import {
 } from '@ant-design/icons';
 import { FaSwimmingPool } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllPools, createPool, updatePool, deletePool } from '../../services/poolService';
+import { createPool, updatePool, deletePool } from '../../services/poolService';
+import { getAllPools } from '../../services/chemicalService';
 import type { Pool } from '../../services/types';
 
 
@@ -33,8 +34,8 @@ const PoolList: React.FC = () => {
     const fetchPools = async () => {
       try {
         setLoading(true);
-        const data = await getAllPools();
-        setPools(data);
+        const response = await getAllPools();
+        setPools(response.data);
       } catch (error) {
         console.error('Lỗi khi lấy dữ liệu hồ bơi:', error);
         message.error('Không thể tải danh sách hồ bơi');

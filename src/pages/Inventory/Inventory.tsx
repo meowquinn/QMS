@@ -77,22 +77,41 @@ const InventoryStock: React.FC = () => {
     }
   };
 
-  // Chỉ load dữ liệu một lần khi component mount
+  // Chỉ load dữ liệu một lần khi component mount và khi chuyển tab
   useEffect(() => {
-    reloadAll();
-  }, []);
-
-  // Load lại lịch sử khi chuyển tab
-  useEffect(() => {
-    if (activeTab === 'history') {
-      getChemicalHistory()
+    if (activeTab === 'inventory') {
+      // Load danh sách hóa chất khi ở tab inventory
+      getAllChemicals()
         .then((res) => {
-          if (res && res.data) {
-            setAdjustmentHistory(res.data);
-          }
+          console.log("Chemicals data:", res?.data); // Debug để xem dữ liệu
+          setChemicals(Array.isArray(res?.data) ? res.data : []);
+          setLoading(false);
         })
         .catch((error) => {
-          console.error("Error fetching history:", error);
+          console.error("Error loading chemicals:", error);
+          message.error("Không thể tải dữ liệu hóa chất!");
+          setLoading(false);
+        });
+
+      // Load pools cùng lúc
+      getAllPools()
+        .then((res) => {
+          setPools(Array.isArray(res?.data) ? res.data : []);
+        })
+        .catch((error) => {
+          console.error("Error loading pools:", error);
+        });
+    } else if (activeTab === 'history') {
+      // Load lịch sử khi ở tab history
+      getChemicalHistory()
+        .then((res) => {
+          setAdjustmentHistory(Array.isArray(res?.data) ? res.data : []);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error loading history:", error);
+          message.error("Không thể tải lịch sử hóa chất!");
+          setLoading(false);
         });
     }
   }, [activeTab]);
