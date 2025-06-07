@@ -11,7 +11,7 @@ import { getAllStaff } from '../../services/staffService'; // Đảm bảo có h
 import type { Pool, WaterQualityRecord, Chemical } from '../../services/types';
 import { applyChemicalForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
 import { getCurrentUser } from '../../services/authService'; // Giả sử có hàm này để lấy thông tin người dùng hiện tại
-
+import { getAllChemicals } from '../../services/chemicalService'; // Lấy danh sách hóa chất
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -40,9 +40,13 @@ const WaterQualityRecords: React.FC = () => {
   // Thêm vào đầu component WaterQualityRecords
   const [isProcessModalVisible, setIsProcessModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<WaterQualityRecord | null>(null);
-  const [selectedChemicalId, setSelectedChemicalId] = useState<number | null>(null);
-  const [chemicalAmount, setChemicalAmount] = useState<number>(1);
-  const [chemicals] = useState<Chemical[]>([]); // Lấy từ API kho hóa chất
+  const [selectedChemicals, setSelectedChemicals] = useState<Array<{
+    chemicalId: number;
+    amount: number;
+    chemicalName?: string;
+    unit?: string;
+  }>>([]);
+  const [chemicals, setChemicals] = useState<Chemical[]>([]); // Lấy từ API kho hóa chất
 
   // Lấy danh sách hồ bơi từ API
   useEffect(() => {
@@ -311,10 +315,26 @@ const WaterQualityRecords: React.FC = () => {
   // Khi mở modal xử lý
   const showProcessModal = (record: WaterQualityRecord) => {
     setSelectedRecord(record);
+    setSelectedChemicals([]); // Reset danh sách hóa chất đã chọn
     setIsProcessModalVisible(true);
-    setSelectedChemicalId(null);
-    setChemicalAmount(1);
   };
+
+  // Thêm useEffect để load danh sách hóa chất khi mở modal
+  useEffect(() => {
+    if (isProcessModalVisible) {
+      // Load danh sách hóa chất
+      getAllChemicals()
+        .then(res => {
+          if (res && res.data) {
+            setChemicals(res.data);
+          }
+        })
+        .catch(error => {
+          console.error("Error loading chemicals:", error);
+          message.error("Không thể tải danh sách hóa chất");
+        });
+    }
+  }, [isProcessModalVisible]);
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -445,57 +465,132 @@ const WaterQualityRecords: React.FC = () => {
         open={isProcessModalVisible}
         onCancel={() => setIsProcessModalVisible(false)}
         onOk={async () => {
-          if (!selectedChemicalId || !selectedRecord) {
-            message.error("Vui lòng chọn hóa chất và số lượng!");
+          if (selectedChemicals.length === 0 || !selectedRecord) {
+            message.error("Vui lòng chọn ít nhất một hóa chất!");
             return;
           }
-          // Gọi API sử dụng hóa chất
-          const selectedChemical = chemicals.find(c => c.chemicalId === selectedChemicalId);
-          if (!selectedChemical) {
-            message.error("Không tìm thấy hóa chất!");
-            return;
+          
+          try {
+            // Xử lý từng hóa chất đã chọn
+            for (const item of selectedChemicals) {
+              const selectedChemical = chemicals.find(c => c.chemicalId === item.chemicalId);
+              if (!selectedChemical) {
+                message.error(`Không tìm thấy hóa chất ID: ${item.chemicalId}`);
+                continue;
+              }
+              
+              if (item.amount > selectedChemical.quantity) {
+                message.error(`Số lượng ${selectedChemical.chemicalName} vượt quá tồn kho!`);
+                continue;
+              }
+              
+              // Gọi API trừ kho và ghi lịch sử
+              await applyChemicalForPool(item.chemicalId, {
+                poolId: selectedRecord.poolId,
+                poolName: selectedRecord.poolName,
+                quantity: item.amount,
+                unit: selectedChemical.unit,
+                adjustedBy: staffId ?? 0,
+                note: `Xử lý chỉ số bất thường cho hồ ${selectedRecord.poolName}`,
+              });
+            }
+            
+            message.success("Đã xử lý và cập nhật kho!");
+            setIsProcessModalVisible(false);
+            
+            // Reload data nếu cần
+            // reloadRecords();
+          } catch (error) {
+            message.error("Xử lý thất bại: " + (error instanceof Error ? error.message : String(error)));
           }
-          if (chemicalAmount > selectedChemical.quantity) {
-            message.error("Số lượng vượt quá tồn kho!");
-            return;
-          }
-          // Gọi API trừ kho và ghi lịch sử
-          await applyChemicalForPool(selectedChemical.chemicalId, {
-            poolId: selectedRecord.poolId,
-            poolName: selectedRecord.poolName,
-            quantity: chemicalAmount,
-            unit: selectedChemical.unit,
-            adjustedBy: staffId ?? 0,
-            note: `Xử lý chỉ số bất thường cho hồ ${selectedRecord.poolName}`,
-          });
-          message.success("Đã xử lý và cập nhật kho!");
-          setIsProcessModalVisible(false);
         }}
         okText="Xác nhận xử lý"
         cancelText="Hủy"
       >
-        <div>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Chọn hóa chất"
-            value={selectedChemicalId}
-            onChange={setSelectedChemicalId}
-          >
-            {chemicals.map(chemical => (
-              <Select.Option key={chemical.chemicalId} value={chemical.chemicalId}>
-                {chemical.chemicalName} (Tồn: {chemical.quantity} {chemical.unit})
-              </Select.Option>
-            ))}
-          </Select>
-          <InputNumber
-            min={1}
-            style={{ width: "100%", marginTop: 12 }}
-            value={chemicalAmount}
-            onChange={(value) => {
-              if (typeof value === 'number') setChemicalAmount(value);
-            }}
-            placeholder="Nhập số lượng sử dụng"
-          />
+        <div className="mb-4">
+          <h3 className="mb-2">Thêm hóa chất</h3>
+          
+          {/* Phần chọn và thêm hóa chất mới */}
+          <div className="flex space-x-2 mb-4">
+            <Select
+              style={{ width: "70%" }}
+              placeholder="Chọn hóa chất"
+              value={undefined}
+              onChange={(value) => {
+                const chemical = chemicals.find(c => c.chemicalId === value);
+                if (chemical) {
+                  setSelectedChemicals(prev => [
+                    ...prev, 
+                    { 
+                      chemicalId: chemical.chemicalId, 
+                      amount: 1,
+                      chemicalName: chemical.chemicalName,
+                      unit: chemical.unit
+                    }
+                  ]);
+                }
+              }}
+            >
+              {chemicals
+                .filter(c => !selectedChemicals.some(sc => sc.chemicalId === c.chemicalId))
+                .map(chemical => (
+                  <Select.Option key={chemical.chemicalId} value={chemical.chemicalId}>
+                    {chemical.chemicalName} (Tồn: {chemical.quantity} {chemical.unit})
+                  </Select.Option>
+                ))
+              }
+            </Select>
+            <Button 
+              type="primary"
+              onClick={() => {
+                // Reset để chọn tiếp
+              }}
+            >
+              Thêm
+            </Button>
+          </div>
+          
+          {/* Danh sách các hóa chất đã chọn */}
+          {selectedChemicals.length > 0 ? (
+            <div className="border rounded p-2">
+              <h4 className="mb-2 font-bold">Hóa chất đã chọn:</h4>
+              {selectedChemicals.map((item, index) => {
+                const chemical = chemicals.find(c => c.chemicalId === item.chemicalId);
+                return (
+                  <div key={index} className="flex items-center justify-between mb-2 pb-2 border-b last:border-0">
+                    <div>{chemical?.chemicalName || `Hóa chất #${item.chemicalId}`}</div>
+                    <div className="flex items-center">
+                      <InputNumber
+                        min={1}
+                        max={chemical?.quantity || 999}
+                        value={item.amount}
+                        onChange={(value) => {
+                          if (typeof value === 'number') {
+                            setSelectedChemicals(prev => prev.map((c, i) => 
+                              i === index ? { ...c, amount: value } : c
+                            ));
+                          }
+                        }}
+                        style={{ width: 80 }}
+                      />
+                      <span className="mx-2">{chemical?.unit || 'đơn vị'}</span>
+                      <Button 
+                        type="text" 
+                        danger
+                        onClick={() => {
+                          setSelectedChemicals(prev => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Xóa
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-gray-500 italic">Chưa có hóa chất nào được chọn</div>
+          )}
         </div>
       </Modal>
     </div>
