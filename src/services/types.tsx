@@ -94,7 +94,7 @@ export interface AdjustmentRecord {
   chemicalId: number;
   chemicalName: string;
   action: string; // "Sử dụng" hoặc "Nạp thêm"
-  poolId: number;
+  poolId: number | null; 
   poolName: string;
   quantity: number;
   unit: string;
