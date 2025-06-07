@@ -234,7 +234,7 @@ const InventoryStock: React.FC = () => {
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
           poolId: 0,
-          poolName: "",
+          poolName: "", // Sử dụng chuỗi rỗng thay vì null
           quantity: values.amount,
           unit: selectedChemical.unit,
           adjustedBy: staffId,
@@ -475,7 +475,7 @@ const InventoryStock: React.FC = () => {
       title: "Hồ bơi",
       dataIndex: "poolName",
       key: "poolName",
-      render: (text: string) => text || "N/A",
+      render: (text: string) => text || "", // Để trống thay vì hiển thị N/A
     },
     {
       title: "Số lượng",

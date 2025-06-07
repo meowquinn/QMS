@@ -16,7 +16,11 @@ export const restockChemical = async (data: {
   chemicalId: number;
   quantity: number;
 }) => {
-  return api.post(`/chemicals/${data.chemicalId}/restock`, { quantity: data.quantity });
+  return api.post(`/chemicals/${data.chemicalId}/restock`, 
+    { 
+      quantity: data.quantity, 
+      id: data.chemicalId
+    });
 };
 
 // Sử dụng hóa chất (ghi vào lịch sử)
