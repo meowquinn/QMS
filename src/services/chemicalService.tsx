@@ -25,12 +25,7 @@ export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | '
 export const applyChemicalForPool = async (
   chemicalId: number,
   data: {
-    poolId: number;
-    poolName: string;
     quantity: number;
-    unit: string;
-    adjustedBy: number;
-    note?: string;
   }
 ) => {
   return api.post(`/Chemicals/${chemicalId}/applychemical`, data);

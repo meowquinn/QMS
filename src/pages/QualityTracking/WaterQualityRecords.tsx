@@ -10,13 +10,11 @@ import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool, WaterQualityRecord, Chemical } from '../../services/types';
 import { applyChemicalForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
-import { getCurrentUser } from '../../services/authService'; // Giả sử có hàm này để lấy thông tin người dùng hiện tại
 import { getAllChemicals } from '../../services/chemicalService'; // Lấy danh sách hóa chất
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-  const staffId = getCurrentUser()?.staffId; // Lấy từ context hoặc redux hoặc props
 
 
 const WaterQualityRecords: React.FC = () => {
@@ -484,14 +482,9 @@ const WaterQualityRecords: React.FC = () => {
                 continue;
               }
               
-              // Gọi API trừ kho và ghi lịch sử
+              // Gọi API chỉ với quantity - BE sẽ tự dựa vào ID để sửa
               await applyChemicalForPool(item.chemicalId, {
-                poolId: selectedRecord.poolId,
-                poolName: selectedRecord.poolName,
-                quantity: item.amount,
-                unit: selectedChemical.unit,
-                adjustedBy: staffId ?? 0,
-                note: `Xử lý chỉ số bất thường cho hồ ${selectedRecord.poolName}`,
+                quantity: item.amount
               });
             }
             
