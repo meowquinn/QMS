@@ -64,6 +64,7 @@ export interface WaterQualitySubmitData {
 
 // Water Quality Record
 export interface WaterQualityRecord {
+  poolId: number;
   parameterId: number;
   poolName: string;
   pTimestamp: Date;
@@ -98,5 +99,19 @@ export interface AdjustmentRecord {
   quantity: number;
   unit: string;
   adjustedBy: number; // staffId
+  note?: string;
+}
+
+export interface ChemicalUsageHistory {
+  historyId: number;
+  chemicalId: number;
+  chemicalName: string;
+  action: string; // "Sử dụng" hoặc "Nạp thêm"
+  poolId: number;
+  poolName: string;
+  quantity: number;
+  unit: string;
+  adjustedBy: number; // staffId
+  cTimestamp: Date; // Ngày giờ thực hiện
   note?: string;
 }

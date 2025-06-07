@@ -16,9 +16,24 @@ export const restockChemical = async (data: Omit<AdjustmentRecord, 'historyId' |
   return api.post('/chemicalUsageHistory', data);
 };
 
-// Sử dụng hóa chất (ghi vào lịch sử) - ĐỔI TÊN để tránh lỗi ESLint
+// Sử dụng hóa chất (ghi vào lịch sử)
 export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
   return api.post('/chemicalUsageHistory', data);
+};
+
+// Sử dụng hóa chất cho hồ bơi (API riêng)
+export const applyChemicalForPool = async (
+  chemicalId: number,
+  data: {
+    poolId: number;
+    poolName: string;
+    quantity: number;
+    unit: string;
+    adjustedBy: number;
+    note?: string;
+  }
+) => {
+  return api.post(`/Chemicals/${chemicalId}/applychemical`, data);
 };
 
 // Lấy danh sách hóa chất
@@ -31,6 +46,7 @@ export const getChemicalHistory = async () => {
   return api.get('/chemicalUsageHistory');
 };
 
+// Lấy danh sách hồ bơi
 export const getAllPools = async () => {
   return api.get('/Pools');
 };

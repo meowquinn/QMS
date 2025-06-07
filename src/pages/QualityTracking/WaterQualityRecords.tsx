@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Badge, Select, DatePicker, Button, Alert, Tooltip, message } from 'antd';
+import { Card, Table, Tag, Badge, Select, DatePicker, Button, Alert, Tooltip, message, Modal, InputNumber } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { 
   InfoCircleOutlined, WarningOutlined, AlertOutlined, 
   CheckCircleOutlined
 } from '@ant-design/icons';
-import { getWaterQualityHistory, updateWaterQualityResolved } from '../../services/waterQualityService';
+import { getWaterQualityHistory } from '../../services/waterQualityService';
 import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
-import type { Pool } from '../../services/types';
-import type { WaterQualityRecord } from '../../services/types'; // Cập nhật import nếu cần
+import type { Pool, WaterQualityRecord, Chemical } from '../../services/types';
+import { applyChemicalForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
+import { getCurrentUser } from '../../services/authService'; // Giả sử có hàm này để lấy thông tin người dùng hiện tại
 
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-// Define measurement status
-
-// Định nghĩa kiểu dữ liệu cho bản ghi đo chất lượng nước
+  const staffId = getCurrentUser()?.staffId; // Lấy từ context hoặc redux hoặc props
 
 
 const WaterQualityRecords: React.FC = () => {
@@ -37,6 +36,13 @@ const WaterQualityRecords: React.FC = () => {
     chlorine: { min: 0.5, max: 3.0 },
     temperature: { min: 26.0, max: 32.0 }
   };
+
+  // Thêm vào đầu component WaterQualityRecords
+  const [isProcessModalVisible, setIsProcessModalVisible] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<WaterQualityRecord | null>(null);
+  const [selectedChemicalId, setSelectedChemicalId] = useState<number | null>(null);
+  const [chemicalAmount, setChemicalAmount] = useState<number>(1);
+  const [chemicals] = useState<Chemical[]>([]); // Lấy từ API kho hóa chất
 
   // Lấy danh sách hồ bơi từ API
   useEffect(() => {
@@ -116,28 +122,6 @@ const WaterQualityRecords: React.FC = () => {
     setFilteredRecords(result);
   }, [selectedStatus, showOnlyExceeded, records]);
 
-  // Xử lý đánh dấu đã xử lý
-  const handleResolveIssue = async (parameterId: number) => {
-    try {
-      // Gọi API cập nhật trạng thái đã xử lý
-      await updateWaterQualityResolved(parameterId, true);
-
-      // (Có thể cập nhật lại notes nếu muốn)
-      // await updateWaterQualityNotes(parameterId, updatedNotes);
-
-      // Cập nhật lại state records như bạn đã làm
-      setRecords(prevRecords =>
-        prevRecords.map(record =>
-          record.parameterId === parameterId
-            ? { ...record, resolved: true, needsAction: false }
-            : record
-        )
-      );
-      message.success('Đã đánh dấu bản ghi là đã xử lý');
-    } catch {
-      message.error('Không thể cập nhật trạng thái bản ghi');
-    }
-  };
 
   // Kiểm tra giá trị pH
   const checkPHStatus = (value: number) => {
@@ -313,26 +297,24 @@ const WaterQualityRecords: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_, record) => {
-        if (!record.needsAction || record.resolved) {
-          return null;
-        }
-        
-        return (
-          <Button 
-            type="primary" 
-            size="small" 
-            onClick={() => handleResolveIssue(record.parameterId)}
-          >
-            Đánh dấu đã xử lý
-          </Button>
-        );
-      },
+      render: (_, record) => (
+        <Button type="primary" onClick={() => showProcessModal(record)}>
+          Xử lý
+        </Button>
+      ),
     },
   ];
 
   // Đếm số lượng vấn đề chưa xử lý
   const unresolvedCount = filteredRecords.filter(r => r.needsAction && !r.resolved).length;
+
+  // Khi mở modal xử lý
+  const showProcessModal = (record: WaterQualityRecord) => {
+    setSelectedRecord(record);
+    setIsProcessModalVisible(true);
+    setSelectedChemicalId(null);
+    setChemicalAmount(1);
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -457,6 +439,65 @@ const WaterQualityRecords: React.FC = () => {
           />
         </div>
       </Card>
+
+      <Modal
+        title="Xử lý chỉ số bất thường"
+        open={isProcessModalVisible}
+        onCancel={() => setIsProcessModalVisible(false)}
+        onOk={async () => {
+          if (!selectedChemicalId || !selectedRecord) {
+            message.error("Vui lòng chọn hóa chất và số lượng!");
+            return;
+          }
+          // Gọi API sử dụng hóa chất
+          const selectedChemical = chemicals.find(c => c.chemicalId === selectedChemicalId);
+          if (!selectedChemical) {
+            message.error("Không tìm thấy hóa chất!");
+            return;
+          }
+          if (chemicalAmount > selectedChemical.quantity) {
+            message.error("Số lượng vượt quá tồn kho!");
+            return;
+          }
+          // Gọi API trừ kho và ghi lịch sử
+          await applyChemicalForPool(selectedChemical.chemicalId, {
+            poolId: selectedRecord.poolId,
+            poolName: selectedRecord.poolName,
+            quantity: chemicalAmount,
+            unit: selectedChemical.unit,
+            adjustedBy: staffId ?? 0,
+            note: `Xử lý chỉ số bất thường cho hồ ${selectedRecord.poolName}`,
+          });
+          message.success("Đã xử lý và cập nhật kho!");
+          setIsProcessModalVisible(false);
+        }}
+        okText="Xác nhận xử lý"
+        cancelText="Hủy"
+      >
+        <div>
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Chọn hóa chất"
+            value={selectedChemicalId}
+            onChange={setSelectedChemicalId}
+          >
+            {chemicals.map(chemical => (
+              <Select.Option key={chemical.chemicalId} value={chemical.chemicalId}>
+                {chemical.chemicalName} (Tồn: {chemical.quantity} {chemical.unit})
+              </Select.Option>
+            ))}
+          </Select>
+          <InputNumber
+            min={1}
+            style={{ width: "100%", marginTop: 12 }}
+            value={chemicalAmount}
+            onChange={(value) => {
+              if (typeof value === 'number') setChemicalAmount(value);
+            }}
+            placeholder="Nhập số lượng sử dụng"
+          />
+        </div>
+      </Modal>
     </div>
   );
 };
