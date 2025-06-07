@@ -105,13 +105,19 @@ const WaterQualityRecords: React.FC = () => {
 
   // Lấy danh sách nhân viên và tạo map staffId -> fullName
   useEffect(() => {
-    getAllStaff().then((staffList: Array<{ staffId: number; fullName: string }>) => {
-      const map: Record<number, string> = {};
-      staffList.forEach((staff: { staffId: number; fullName: string }) => {
-        map[staff.staffId] = staff.fullName;
+    getAllStaff()
+      .then((res) => {
+        const staffObj: {[key: number]: string} = {};
+        if (Array.isArray(res?.data)) {
+          res.data.forEach((staff: { staffId: number; fullName?: string }) => {
+            staffObj[staff.staffId] = staff.fullName || `Nhân viên #${staff.staffId}`;
+          });
+        }
+        setStaffMap(staffObj);
+      })
+      .catch((error) => {
+        console.error("Error loading staff data:", error);
       });
-      setStaffMap(map);
-    });
   }, []);
 
   // Áp dụng bộ lọc trạng thái và lọc vượt ngưỡng trên dữ liệu client

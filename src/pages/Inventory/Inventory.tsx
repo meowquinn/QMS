@@ -496,7 +496,6 @@ const InventoryStock: React.FC = () => {
       dataIndex: "adjustedBy",
       key: "adjustedBy",
       render: (staffId: number) => {
-        // Hiển thị tên nhân viên nếu có, ngược lại hiển thị ID
         return staffMap[staffId] || `Nhân viên #${staffId}`;
       }
     },
