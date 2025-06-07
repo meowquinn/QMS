@@ -11,8 +11,16 @@ export const deleteChemical = async (chemicalId: number) => {
   return api.delete(`/chemicals/${chemicalId}`);
 };
 
-// Nạp thêm hóa chất (ghi vào lịch sử)
-export const restockChemical = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
+// Nạp thêm hóa chất
+export const restockChemical = async (data: {
+  chemicalId: number;
+  quantity: number;
+}) => {
+  return api.post(`/chemicals/${data.chemicalId}/restock`, { quantity: data.quantity });
+};
+
+// Sử dụng hóa chất (ghi vào lịch sử)
+export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
   return api.post('/chemicalUsageHistory', data);
 };
 

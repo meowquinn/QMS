@@ -35,6 +35,7 @@ import {
   getAllChemicals,
   getChemicalHistory,
   updateChemical,
+  createChemicalUsageHistory,
 } from "../../services/chemicalService";
 import { getAllPools } from "../../services/poolService";
 import { getCurrentUser } from "../../services/authService";
@@ -222,7 +223,14 @@ const InventoryStock: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (selectedChemical) {
-        const restockData = {
+        // Gọi API nạp thêm hóa chất
+        await restockChemical({
+          chemicalId: selectedChemical.chemicalId,
+          quantity: values.amount
+        });
+        
+        // Tạo lịch sử sử dụng
+        await createChemicalUsageHistory({
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
           poolId: 0,
@@ -230,11 +238,11 @@ const InventoryStock: React.FC = () => {
           quantity: values.amount,
           unit: selectedChemical.unit,
           adjustedBy: staffId,
-          cStatus: "Hoàn thành",
-          note: values.note,
+          note: values.note || "Nạp thêm hóa chất",
           action: "Nạp thêm",
-        };
-        await restockChemical(restockData);
+          cStatus: "Hoàn thành"
+        });
+
         setIsRestockModalVisible(false);
         message.success("Đã nạp thêm hóa chất thành công!");
         await reloadAll();

@@ -99,7 +99,6 @@ export const getWaterQualityDetail = async (parameterId: number) => {
   }
 };
 
-
 /**
  * Cập nhật trạng thái đã xử lý cho bản ghi
  */

@@ -126,7 +126,6 @@ export interface createChemicalUsageHistory {
   quantity: number;
   unit: string;
   adjustedBy: number;
-  cStatus: string;
   note?: string;
   cTimestamp: Date;
 }
