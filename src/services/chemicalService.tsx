@@ -21,27 +21,16 @@ export const applyChemical = async (data: Omit<AdjustmentRecord, 'historyId' | '
   return api.post('/chemicalUsageHistory', data);
 };
 
-// Sử dụng hóa chất cho hồ bơi (API riêng)
-export const applyChemicalForPool = async (
-  chemicalId: number,
+// Sử dụng nhiều hóa chất cho một lần xử lý
+export const applyMultipleChemicalsForPool = async (
+  chemicalId: number, // Thêm tham số này để URL hoạt động đúng
   data: {
-    quantity: number;
+    chemicals: Array<{
+      quantity: number;
+    }>;
   }
 ) => {
   return api.post(`/Chemicals/${chemicalId}/applychemical`, data);
-};
-
-// Sử dụng nhiều hóa chất cho một lần xử lý
-export const applyMultipleChemicalsForPool = async (
-  data: {
-    chemicals: Array<{
-      chemicalId: number;
-      quantity: number;
-    }>;
-    parameterId?: number; // ID của bản ghi chất lượng nước cần xử lý
-  }
-) => {
-  return api.post('/Chemicals/usemultiple', data);
 };
 
 // Lấy danh sách hóa chất

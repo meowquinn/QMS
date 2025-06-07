@@ -483,16 +483,12 @@ const WaterQualityRecords: React.FC = () => {
               }
             }
             
-            // Chuẩn bị dữ liệu để gửi trong một request
-            const chemicalsToApply = selectedChemicals.map(item => ({
-              chemicalId: item.chemicalId,
-              quantity: item.amount
-            }));
             
             // Gọi API một lần duy nhất với tất cả hóa chất
-            await applyMultipleChemicalsForPool({
-              chemicals: chemicalsToApply,
-              parameterId: selectedRecord?.parameterId
+            await applyMultipleChemicalsForPool(selectedRecord.poolId, {
+              chemicals: selectedChemicals.map(item => ({
+                quantity: item.amount
+              }))
             });
             
             message.success("Đã xử lý và cập nhật kho!");
