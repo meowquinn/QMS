@@ -51,7 +51,7 @@ export const getChemicalHistory = async () => {
 };
 
 // Tạo lịch sử sử dụng hóa chất
-export const createChemicalUsageHistory = async (data: Omit<AdjustmentRecord, 'historyId' | 'cTimestamp'>) => {
+export const createChemicalUsageHistory = async (data: Omit<AdjustmentRecord, 'cTimestamp'>) => {
   return api.post('/chemicalUsageHistory', data);
 };
 
