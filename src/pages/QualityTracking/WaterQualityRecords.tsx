@@ -9,7 +9,7 @@ import { getWaterQualityHistory } from '../../services/waterQualityService';
 import { getAllPools } from '../../services/poolService';
 import { getAllStaff } from '../../services/staffService'; // Đảm bảo có hàm này
 import type { Pool, WaterQualityRecord, Chemical } from '../../services/types';
-import { applyChemicalForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
+import { applyMultipleChemicalsForPool } from '../../services/chemicalService'; // Giả sử có hàm này để xử lý hóa chất
 import { getAllChemicals } from '../../services/chemicalService'; // Lấy danh sách hóa chất
 
 const { Option } = Select;
@@ -469,24 +469,31 @@ const WaterQualityRecords: React.FC = () => {
           }
           
           try {
-            // Xử lý từng hóa chất đã chọn
+            // Kiểm tra số lượng tồn trước
             for (const item of selectedChemicals) {
               const selectedChemical = chemicals.find(c => c.chemicalId === item.chemicalId);
               if (!selectedChemical) {
                 message.error(`Không tìm thấy hóa chất ID: ${item.chemicalId}`);
-                continue;
+                return;
               }
               
               if (item.amount > selectedChemical.quantity) {
                 message.error(`Số lượng ${selectedChemical.chemicalName} vượt quá tồn kho!`);
-                continue;
+                return;
               }
-              
-              // Gọi API chỉ với quantity - BE sẽ tự dựa vào ID để sửa
-              await applyChemicalForPool(item.chemicalId, {
-                quantity: item.amount
-              });
             }
+            
+            // Chuẩn bị dữ liệu để gửi trong một request
+            const chemicalsToApply = selectedChemicals.map(item => ({
+              chemicalId: item.chemicalId,
+              quantity: item.amount
+            }));
+            
+            // Gọi API một lần duy nhất với tất cả hóa chất
+            await applyMultipleChemicalsForPool({
+              chemicals: chemicalsToApply,
+              parameterId: selectedRecord?.parameterId
+            });
             
             message.success("Đã xử lý và cập nhật kho!");
             setIsProcessModalVisible(false);

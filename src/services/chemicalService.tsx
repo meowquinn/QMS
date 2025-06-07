@@ -31,6 +31,19 @@ export const applyChemicalForPool = async (
   return api.post(`/Chemicals/${chemicalId}/applychemical`, data);
 };
 
+// Sử dụng nhiều hóa chất cho một lần xử lý
+export const applyMultipleChemicalsForPool = async (
+  data: {
+    chemicals: Array<{
+      chemicalId: number;
+      quantity: number;
+    }>;
+    parameterId?: number; // ID của bản ghi chất lượng nước cần xử lý
+  }
+) => {
+  return api.post('/Chemicals/usemultiple', data);
+};
+
 // Lấy danh sách hóa chất
 export const getAllChemicals = async () => {
   return api.get('/chemicals');
