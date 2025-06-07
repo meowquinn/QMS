@@ -428,11 +428,11 @@ const InventoryStock: React.FC = () => {
     {
       title: "ID",
       dataIndex: "historyId",
-      key: "id",
-      width: 80,
-      render: (id: number | undefined) => (
+      key: "historyId",
+      width: 100,
+      render: (text: string) => (
         <span className="text-xs text-gray-500 font-mono">
-          {id || "-"}
+          {text?.length > 10 ? `${text.substring(0, 10)}...` : text}
         </span>
       ),
     },
