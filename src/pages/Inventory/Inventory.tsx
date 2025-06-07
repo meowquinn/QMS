@@ -427,14 +427,18 @@ const InventoryStock: React.FC = () => {
   const historyColumns = [
     {
       title: "ID",
-      dataIndex: "historyId",
+      dataIndex: "historyId",  
       key: "historyId",
       width: 100,
-      render: (text: string) => (
-        <span className="text-xs text-gray-500 font-mono">
-          {text?.length > 10 ? `${text.substring(0, 10)}...` : text}
-        </span>
-      ),
+      render: (id: number | string | undefined) => {    
+        if (id === undefined || id === null) return "-";
+        const idString = String(id);
+        return (
+          <span className="text-xs text-gray-500 font-mono">
+            {idString}
+          </span>
+        );
+      },
     },
     {
       title: 'Thời gian',
@@ -444,7 +448,7 @@ const InventoryStock: React.FC = () => {
         <span>{new Date(timestamp).toLocaleString('vi-VN')}</span>
       ),
       sorter: (a: AdjustmentRecord, b: AdjustmentRecord) => new Date(a.cTimestamp).getTime() - new Date(b.cTimestamp).getTime(),
-      defaultSortOrder: 'descend',
+      defaultSortOrder: "descend" as const,
     },
     {
       title: "Hóa chất",
