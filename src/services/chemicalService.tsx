@@ -30,7 +30,7 @@ export const applyMultipleChemicalsForPool = async (
     }>;
   }
 ) => {
-  return api.post('/Chemicals/applychemical', data);
+  return api.post('/Chemicals/batch/applychemical', data);
 };
 
 // Lấy danh sách hóa chất
