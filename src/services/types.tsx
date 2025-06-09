@@ -143,21 +143,3 @@ export interface DashboardStats {
   todayMeasurements: number;
 }
 
-export interface QualityAlert {
-  id: string;
-  poolName: string;
-  parameter: string;
-  value: string | number;
-  status: string;
-  time: string;
-}
-
-export interface Measurement {
-  id?: string;
-  recordId?: string;
-  poolName: string;
-  pH: number;
-  chlorine: number;
-  temperature: number;
-  time: string;
-}
