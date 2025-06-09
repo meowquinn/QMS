@@ -3,6 +3,7 @@ import { FaExclamationTriangle, FaCheckCircle, FaWater, FaFlask } from 'react-ic
 import { message, Spin } from 'antd';
 import { getAllPools } from '../../services/poolService';
 import { getWaterQualityHistory } from '../../services/waterQualityService';
+import { getDashboardSummary } from '../../services/dashboardService';
 import type { Pool, WaterQualityRecord } from '../../services/types';
 
 interface QualityAlert {
@@ -15,12 +16,24 @@ interface QualityAlert {
   time: string;
 }
 
+interface DashboardStats {
+  totalPools: number;
+  activePools: number;
+  maintenancePools: number;
+  closedPools: number;
+  totalAlerts: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+  todayMeasurements?: number;
+}
+
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [pools, setPools] = useState<Pool[]>([]);
   const [qualityRecords, setQualityRecords] = useState<WaterQualityRecord[]>([]);
   const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
   const [qualityAlerts, setQualityAlerts] = useState<QualityAlert[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
 
   const [poolStats, setPoolStats] = useState({
     total: 0,
@@ -69,28 +82,32 @@ const Dashboard: React.FC = () => {
     const latestRecords = getLatestRecordsPerPool(records, pools);
     
     for (const record of latestRecords) {
+      // Sử dụng tên trường có sẵn trong API response
+      const phValue = record.pHLevel || record.phLevel;
+      const chlorineValue = record.chlorineMgPerL || record.chlorineLevel;
+      
       // Kiểm tra pH
-      if (record.phLevel < 7.2 || record.phLevel > 7.8) {
+      if (phValue < 7.2 || phValue > 7.8) {
         alerts.push({
-          id: `ph-${record.recordId}`,
+          id: `ph-${record.recordId || record.parameterId || Math.random()}`,
           poolId: record.poolId,
           poolName: poolMap.get(record.poolId) || `Hồ bơi #${record.poolId}`,
           parameter: 'pH',
-          value: record.phLevel,
-          status: (record.phLevel < 6.8 || record.phLevel > 8.0 ? 'danger' : 'warning'),
+          value: phValue,
+          status: (phValue < 6.8 || phValue > 8.0 ? 'danger' : 'warning'),
           time: new Date(record.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
         });
       }
       
       // Kiểm tra clo
-      if (record.chlorineLevel < 1.0 || record.chlorineLevel > 3.0) {
+      if (chlorineValue < 1.0 || chlorineValue > 3.0) {
         alerts.push({
-          id: `chlorine-${record.recordId}`,
+          id: `chlorine-${record.recordId || record.parameterId || Math.random()}`,
           poolId: record.poolId,
           poolName: poolMap.get(record.poolId) || `Hồ bơi #${record.poolId}`,
           parameter: 'Clo',
-          value: record.chlorineLevel,
-          status: (record.chlorineLevel < 0.5 || record.chlorineLevel > 3.5 ? 'danger' : 'warning'),
+          value: chlorineValue,
+          status: (chlorineValue < 0.5 || chlorineValue > 3.5 ? 'danger' : 'warning'),
           time: new Date(record.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
         });
       }
@@ -104,22 +121,41 @@ const Dashboard: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Gọi API lấy danh sách hồ bơi
-        const poolsResponse = await getAllPools();
+        // Gọi API lấy tổng quan dashboard để lấy dữ liệu thống kê
+        const summaryResponse = await getDashboardSummary();
+        
+        if (summaryResponse?.success && summaryResponse?.data) {
+          const stats = summaryResponse.data;
+          setDashboardStats(stats);
+          
+          // Cập nhật thống kê hồ bơi từ API tổng quan
+          setPoolStats({
+            total: stats.totalPools || 0,
+            active: stats.activePools || 0,
+            underMaintenance: stats.maintenancePools || 0,
+          });
+        }
+        
+        // Tiếp tục gọi API để lấy dữ liệu chi tiết
+        const [poolsResponse, recordsResponse] = await Promise.all([
+          getAllPools(),
+          getWaterQualityHistory()
+        ]);
+        
         const poolsData = Array.isArray(poolsResponse?.data) ? poolsResponse.data : [];
-        setPools(poolsData);
-        
-        // Tính toán số liệu thống kê hồ bơi
-        setPoolStats({
-          total: poolsData.length,
-          active: poolsData.filter(pool => pool.status === 'active' || pool.status === 'Hoạt động').length,
-          underMaintenance: poolsData.filter(pool => pool.status === 'maintenance' || pool.status === 'Bảo trì').length,
-        });
-        
-        // Gọi API lấy dữ liệu chất lượng nước
-        const recordsResponse = await getWaterQualityHistory();
         const recordsData = Array.isArray(recordsResponse?.data) ? recordsResponse.data : [];
+        
+        setPools(poolsData);
         setQualityRecords(recordsData);
+        
+        // Nếu không có dữ liệu thống kê từ API tổng quan, tính toán từ dữ liệu chi tiết
+        if (!dashboardStats) {
+          setPoolStats({
+            total: poolsData.length,
+            active: poolsData.filter(pool => pool.status === 'active' || pool.status === 'Hoạt động').length,
+            underMaintenance: poolsData.filter(pool => pool.status === 'maintenance' || pool.status === 'Bảo trì').length,
+          });
+        }
         
         // Lọc ra những bản ghi mới nhất cho mỗi hồ bơi (đo lường gần đây)
         const latestRecords = getLatestRecordsPerPool(recordsData, poolsData);
@@ -137,7 +173,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // Dependency array rỗng để chỉ chạy một lần khi component mount
 
   // Hiển thị loading khi đang tải dữ liệu
   if (loading) {
@@ -169,6 +205,9 @@ const Dashboard: React.FC = () => {
             {poolStats.underMaintenance > 0 && (
               <span className="ml-2 text-orange-500 font-medium">{poolStats.underMaintenance} bảo trì</span>
             )}
+            {dashboardStats?.closedPools && dashboardStats.closedPools > 0 && (
+              <span className="ml-2 text-red-500 font-medium">{dashboardStats.closedPools} đóng cửa</span>
+            )}
           </div>
         </div>
 
@@ -176,7 +215,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Cảnh báo</p>
-              <p className="text-2xl font-bold">{qualityAlerts.length}</p>
+              <p className="text-2xl font-bold">
+                {dashboardStats?.totalAlerts || qualityAlerts.length}
+              </p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
               <FaExclamationTriangle className="text-red-600 text-xl" />
@@ -184,11 +225,11 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4 text-sm">
             <span className="text-red-500 font-medium">
-              {qualityAlerts.filter(a => a.status === 'danger').length} nghiêm trọng
+              {dashboardStats?.criticalAlerts || qualityAlerts.filter(a => a.status === 'danger').length} nghiêm trọng
             </span>
-            {qualityAlerts.filter(a => a.status === 'warning').length > 0 && (
+            {(dashboardStats?.warningAlerts || qualityAlerts.filter(a => a.status === 'warning').length) > 0 && (
               <span className="ml-1 text-orange-500 font-medium">
-                , {qualityAlerts.filter(a => a.status === 'warning').length} cảnh báo
+                , {dashboardStats?.warningAlerts || qualityAlerts.filter(a => a.status === 'warning').length} cảnh báo
               </span>
             )}
           </div>
@@ -198,7 +239,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Đo nước hôm nay</p>
-              <p className="text-2xl font-bold">{recentMeasurements.length}</p>
+              <p className="text-2xl font-bold">
+                {dashboardStats?.todayMeasurements || recentMeasurements.length}
+              </p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
               <FaFlask className="text-green-600 text-xl" />
@@ -206,7 +249,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4 text-sm">
             <span className="text-green-500 font-medium">
-              {recentMeasurements.length} báo cáo đã nhận
+              {dashboardStats?.todayMeasurements || recentMeasurements.length} báo cáo đã nhận
             </span>
           </div>
         </div>
@@ -282,24 +325,24 @@ const Dashboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={`px-2 py-1 rounded-full ${
-                      measurement.pHLevel < 7.2 || measurement.pHLevel > 7.8 
+                      (measurement.pHLevel || measurement.pHLevel) < 7.2 || (measurement.pHLevel || measurement.pHLevel) > 7.8 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {measurement.pHLevel}
+                      {measurement.pHLevel || measurement.pHLevel}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={`px-2 py-1 rounded-full ${
-                      measurement.chlorineMgPerL < 1.0 || measurement.chlorineMgPerL > 3.0 
+                      (measurement.chlorineMgPerL || measurement.chlorineMgPerL) < 1.0 || (measurement.chlorineMgPerL || measurement.chlorineMgPerL) > 3.0 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {measurement.chlorineMgPerL}
+                      {measurement.chlorineMgPerL || measurement.chlorineMgPerL}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {measurement.temperatureC}°C
+                    {measurement.temperatureC || measurement.temperatureC}°C
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(measurement.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
