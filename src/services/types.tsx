@@ -131,3 +131,33 @@ export interface createChemicalUsageHistory {
   note?: string;
   cTimestamp: Date;
 }
+
+export interface DashboardStats {
+  totalPools: number;
+  activePools: number;
+  maintenancePools: number;
+  closedPools: number;
+  totalAlerts: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+  todayMeasurements: number;
+}
+
+export interface QualityAlert {
+  id: string;
+  poolName: string;
+  parameter: string;
+  value: string | number;
+  status: string;
+  time: string;
+}
+
+export interface Measurement {
+  id?: string;
+  recordId?: string;
+  poolName: string;
+  pH: number;
+  chlorine: number;
+  temperature: number;
+  time: string;
+}
