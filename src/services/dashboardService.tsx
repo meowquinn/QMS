@@ -1,4 +1,6 @@
 import api from './api';
+// Import types từ file types.tsx
+import type { Pool, WaterQualityRecord } from './types';
 
 // Interface cho dữ liệu tổng quan
 export interface DashboardSummary {
@@ -7,7 +9,7 @@ export interface DashboardSummary {
   maintenancePools: number;
   closedPools: number;
   totalAlerts?: number;
-  dangerAlerts?: number;
+  criticalAlerts?: number;
   warningAlerts?: number;
   todayMeasurements?: number;
 }
@@ -21,22 +23,44 @@ export const getDashboardSummary = async () => {
     return response.data;
   } catch (error) {
     console.error(error);
-    // Nếu API chưa được triển khai, trả về dữ liệu mẫu
-    console.warn("Dashboard API not available, using mock data");
     
-    return {
-      success: true,
-      data: {
-        totalPools: 4,
-        activePools: 2,
-        maintenancePools: 1,
-        closedPools: 1,
-        totalAlerts: 3,
-        dangerAlerts: 1,
-        warningAlerts: 2,
-        todayMeasurements: 8
-      }
-    };
+    // Tính toán dữ liệu tổng quan từ các API khác
+    try {
+      const [poolsRes, recordsRes] = await Promise.all([
+        api.get('/pools'),
+        api.get('/waterquality')
+      ]);
+      
+      const poolsData = (poolsRes?.data?.data || []) as Pool[];
+      const recordsData = (recordsRes?.data?.data || []) as WaterQualityRecord[];
+      
+      // Sử dụng dữ liệu từ API để tính toán
+      const stats = calculateDashboardStats(poolsData, recordsData);
+      
+      return {
+        success: true,
+        data: stats
+      };
+    } catch (innerError) {
+      console.error("Fallback calculation failed:", innerError);
+      
+      // Nếu tất cả đều thất bại, trả về dữ liệu mẫu
+      console.warn("Dashboard API not available, using mock data");
+      
+      return {
+        success: true,
+        data: {
+          totalPools: 0,
+          activePools: 0,
+          maintenancePools: 0,
+          closedPools: 0,
+          totalAlerts: 0,
+          criticalAlerts: 0,
+          warningAlerts: 0,
+          todayMeasurements: 0
+        }
+      };
+    }
   }
 };
 
@@ -49,8 +73,28 @@ export const getQualityAlerts = async () => {
     return response.data;
   } catch (error) {
     console.error(error);
-    console.warn("Quality alerts API not available, using derived data from water quality records");
-    return { success: false, message: "API not available" };
+    
+    // Thử tính toán cảnh báo từ dữ liệu chất lượng nước
+    try {
+      const [poolsRes, recordsRes] = await Promise.all([
+        api.get('/pools'),
+        api.get('/waterquality')
+      ]);
+      
+      const poolsData = (poolsRes?.data?.data || []) as Pool[];
+      const recordsData = (recordsRes?.data?.data || []) as WaterQualityRecord[];
+      
+      // Chỉ lấy bản ghi mới nhất cho mỗi hồ
+      const alerts = getQualityAlertsFromRecords(recordsData, poolsData);
+      
+      return {
+        success: true,
+        data: alerts
+      };
+    } catch (innerError) {
+      console.error("Failed to calculate alerts from water quality records:", innerError);
+      return { success: false, message: "API not available" };
+    }
   }
 };
 
@@ -63,70 +107,174 @@ export const getLatestMeasurements = async () => {
     return response.data;
   } catch (error) {
     console.error(error);
-    console.warn("Latest measurements API not available, using derived data from water quality records");
-    return { success: false, message: "API not available" };
+    
+    // Thử lấy bản ghi từ API chất lượng nước
+    try {
+      const [poolsRes, recordsRes] = await Promise.all([
+        api.get('/pools'),
+        api.get('/waterquality')
+      ]);
+      
+      const poolsData = (poolsRes?.data?.data || []) as Pool[];
+      const recordsData = (recordsRes?.data?.data || []) as WaterQualityRecord[];
+      
+      // Lấy 5 bản ghi mới nhất
+      const latestRecords = getLatestRecordsFromAll(recordsData, poolsData).slice(0, 5);
+      
+      return {
+        success: true,
+        data: latestRecords
+      };
+    } catch (innerError) {
+      console.error("Failed to get latest measurements:", innerError);
+      return { success: false, message: "API not available" };
+    }
   }
+};
+
+/**
+ * Hàm lấy ra 5 bản ghi đo lường gần đây nhất
+ */
+export const getLatestRecordsFromAll = (records: WaterQualityRecord[] = [], pools: Pool[] = []): WaterQualityRecord[] => {
+  const poolMap = new Map<number | string, string>();
+  
+  // Tạo map để ánh xạ poolsId với tên hồ bơi
+  pools.forEach(pool => {
+    const id = pool.poolsId;
+    if (id) poolMap.set(id, pool.poolName || '');
+  });
+  
+  // Sắp xếp theo thời gian mới nhất trước
+  const sortedRecords = [...records].sort((a, b) => {
+    const dateA = new Date(a.pTimestamp || a.pTimestamp || '');
+    const dateB = new Date(b.pTimestamp || b.pTimestamp || '');
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  // Thêm tên hồ bơi vào mỗi bản ghi
+  sortedRecords.forEach(record => {
+    const id = record.poolId;
+    if (id) {
+      record.poolName = poolMap.get(id) || `Hồ bơi #${id}`;
+    }
+  });
+  
+  // Trả về 5 bản ghi mới nhất
+  return sortedRecords.slice(0, 5);
+};
+
+/**
+ * Định nghĩa interface cho các cảnh báo
+ */
+interface QualityAlert {
+  id: string;
+  poolId: number | string;
+  poolName: string;
+  parameter: string;
+  value: number;
+  status: 'danger' | 'warning';
+  time: string;
+}
+
+/**
+ * Hàm lọc ra các cảnh báo chất lượng nước từ dữ liệu đo lường
+ */
+export const getQualityAlertsFromRecords = (records: WaterQualityRecord[] = [], pools: Pool[] = []): QualityAlert[] => {
+  const poolMap = new Map<number | string, string>();
+  
+  // Tạo map để ánh xạ poolId với tên hồ bơi
+  pools.forEach(pool => {
+    const id = pool.poolsId;
+    if (id) poolMap.set(id, pool.poolName || '');
+  });
+  
+  // Lọc ra bản ghi mới nhất cho mỗi hồ bơi
+  const latestPerPool = new Map<number | string, WaterQualityRecord>();
+  
+  // Sắp xếp theo thời gian mới nhất
+  const sortedRecords = [...records].sort((a, b) => {
+    const dateA = new Date(a.pTimestamp || a.pTimestamp || '');
+    const dateB = new Date(b.pTimestamp || b.pTimestamp || '');
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  // Lấy bản ghi mới nhất cho mỗi hồ
+  sortedRecords.forEach(record => {
+    const poolId = record.poolId;
+    if (poolId && !latestPerPool.has(poolId)) {
+      latestPerPool.set(poolId, record);
+    }
+  });
+  
+  // Tạo danh sách cảnh báo từ các bản ghi mới nhất
+  const alerts: QualityAlert[] = [];
+  const latestRecords = Array.from(latestPerPool.values());
+  
+  latestRecords.forEach(record => {
+    const poolId = record.poolId;
+    if (!poolId) return;
+    
+    const poolName = poolMap.get(poolId) || `Hồ bơi #${poolId}`;
+    const timestamp = record.pTimestamp || record.pTimestamp || '';
+    const phValue = record.pHLevel || record.pHLevel;
+    const chlorineValue = record.chlorineMgPerL || record.chlorineLevel;
+    
+    // Kiểm tra pH
+    if (phValue !== undefined && (phValue < 7.2 || phValue > 7.8)) {
+      alerts.push({
+        id: `ph-${record.parameterId || Math.random()}`,
+        poolId,
+        poolName,
+        parameter: 'pH',
+        value: phValue,
+        status: phValue < 6.8 || phValue > 8.0 ? 'danger' : 'warning',
+        time: new Date(timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
+      });
+    }
+    
+    // Kiểm tra clo
+    if (chlorineValue !== undefined && (chlorineValue < 1.0 || chlorineValue > 3.0)) {
+      alerts.push({
+        id: `chlorine-${record.parameterId || Math.random()}`,
+        poolId,
+        poolName,
+        parameter: 'Clo',
+        value: chlorineValue,
+        status: chlorineValue < 0.5 || chlorineValue > 3.5 ? 'danger' : 'warning',
+        time: new Date(timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
+      });
+    }
+  });
+  
+  return alerts;
 };
 
 /**
  * Tính toán số liệu tổng quan từ dữ liệu hồ bơi và chất lượng nước
  */
-export const calculateDashboardStats = (pools: { status: string; poolId: string }[] = [], qualityRecords: { cTimestamp: string; poolId: string; phLevel: number; chlorineLevel: number }[] = []) => {
+export const calculateDashboardStats = (pools: Pool[] = [], qualityRecords: WaterQualityRecord[] = []): DashboardSummary => {
   // Tính toán thống kê hồ bơi
   const totalPools = pools.length;
-  const activePools = pools.filter(p => p.status === 'active' || p.status === 'Hoạt động').length;
-  const maintenancePools = pools.filter(p => p.status === 'maintenance' || p.status === 'Bảo trì').length;
+  const activePools = pools.filter(p => p.pStatus === 'active' || p.pStatus === 'Hoạt động').length;
+  const maintenancePools = pools.filter(p => p.pStatus === 'maintenance' || p.pStatus === 'Bảo trì').length;
   const closedPools = totalPools - activePools - maintenancePools;
   
   // Lọc ra các bản ghi hôm nay
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const todayMeasurements = qualityRecords.filter(record => 
-    new Date(record.cTimestamp) >= today
-  ).length;
+  const todayMeasurements = qualityRecords.filter(record => {
+    if (!record.pTimestamp && !record.pTimestamp) return false;
+    const recordDate = new Date(record.pTimestamp || record.pTimestamp || '');
+    return recordDate >= today;
+  }).length;
   
-  // Đếm cảnh báo
-  interface Alert {
-    parameter: string;
-    status: 'warning' | 'danger';
-  }
-  const alerts: Alert[] = [];
-  
-  // Map để lưu bản ghi mới nhất cho mỗi hồ bơi
-  const latestPerPool = new Map();
-  
-  // Sắp xếp các bản ghi theo thời gian giảm dần
-  const sortedRecords = [...qualityRecords].sort((a, b) => 
-    new Date(b.cTimestamp).getTime() - new Date(a.cTimestamp).getTime()
-  );
-  
-  // Lọc ra bản ghi mới nhất cho mỗi hồ bơi
-  sortedRecords.forEach(record => {
-    if (!latestPerPool.has(record.poolId)) {
-      latestPerPool.set(record.poolId, record);
-      
-      // Kiểm tra pH
-      if (record.phLevel < 7.2 || record.phLevel > 7.8) {
-        alerts.push({
-          parameter: 'pH',
-          status: record.phLevel < 6.8 || record.phLevel > 8.0 ? 'danger' : 'warning'
-        });
-      }
-      
-      // Kiểm tra clo
-      if (record.chlorineLevel < 1.0 || record.chlorineLevel > 3.0) {
-        alerts.push({
-          parameter: 'Clo',
-          status: record.chlorineLevel < 0.5 || record.chlorineLevel > 3.5 ? 'danger' : 'warning'
-        });
-      }
-    }
-  });
+  // Lấy cảnh báo từ records
+  const alerts = getQualityAlertsFromRecords(qualityRecords, pools);
   
   const totalAlerts = alerts.length;
-  const dangerAlerts = alerts.filter(alert => alert.status === 'danger').length;
-  const warningAlerts = totalAlerts - dangerAlerts;
+  const criticalAlerts = alerts.filter(alert => alert.status === 'danger').length;
+  const warningAlerts = totalAlerts - criticalAlerts;
   
   return {
     totalPools,
@@ -134,7 +282,7 @@ export const calculateDashboardStats = (pools: { status: string; poolId: string 
     maintenancePools,
     closedPools,
     totalAlerts,
-    dangerAlerts,
+    criticalAlerts,
     warningAlerts,
     todayMeasurements
   };

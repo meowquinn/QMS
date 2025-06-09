@@ -64,6 +64,7 @@ export interface WaterQualitySubmitData {
 
 // Water Quality Record
 export interface WaterQualityRecord {
+  chlorineLevel: number;
   poolId: number;
   parameterId: number;
   poolName: string;
