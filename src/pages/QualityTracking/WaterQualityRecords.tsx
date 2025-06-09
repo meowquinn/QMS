@@ -51,6 +51,7 @@ const WaterQualityRecords: React.FC = () => {
     unit?: string;
   }>>([]);
   const [chemicals, setChemicals] = useState<Chemical[]>([]); // Lấy từ API kho hóa chất
+  const [selectedChemicalId, setSelectedChemicalId] = useState<number | undefined>(undefined); // State mới để lưu hóa chất đang chọn
 
   // Lấy danh sách hồ bơi từ API
   useEffect(() => {
@@ -564,21 +565,10 @@ const WaterQualityRecords: React.FC = () => {
             <Select
               style={{ width: "70%" }}
               placeholder="Chọn hóa chất"
-              value={undefined}
-              onChange={(value) => {
-                const chemical = chemicals.find(c => c.chemicalId === value);
-                if (chemical) {
-                  setSelectedChemicals(prev => [
-                    ...prev, 
-                    { 
-                      chemicalId: chemical.chemicalId, 
-                      amount: 1,
-                      chemicalName: chemical.chemicalName,
-                      unit: chemical.unit
-                    }
-                  ]);
-                }
-              }}
+              value={selectedChemicalId}  // Thêm state mới để lưu hóa chất đang chọn
+              onChange={(value) => setSelectedChemicalId(value)}
+              showSearch
+              optionFilterProp="children"
             >
               {chemicals
                 .filter(c => !selectedChemicals.some(sc => sc.chemicalId === c.chemicalId))
@@ -589,61 +579,63 @@ const WaterQualityRecords: React.FC = () => {
                 ))
               }
             </Select>
-            <Button 
-              type="primary"
-              onClick={() => {
-                // Reset để chọn tiếp
-              }}
-            >
-              Thêm
-            </Button>
-          </div>
-          
-          {/* Danh sách các hóa chất đã chọn */}
-          {selectedChemicals.length > 0 ? (
-            <div className="border rounded p-2">
-              <h4 className="mb-2 font-bold">Hóa chất đã chọn:</h4>
-              {selectedChemicals.map((item, index) => {
-                const chemical = chemicals.find(c => c.chemicalId === item.chemicalId);
-                return (
-                  <div key={index} className="flex items-center justify-between mb-2 pb-2 border-b last:border-0">
-                    <div>{chemical?.chemicalName || `Hóa chất #${item.chemicalId}`}</div>
-                    <div className="flex items-center">
-                      <InputNumber
-                        min={1}
-                        max={chemical?.quantity || 999}
-                        value={item.amount}
-                        onChange={(value) => {
-                          if (typeof value === 'number') {
-                            setSelectedChemicals(prev => prev.map((c, i) => 
-                              i === index ? { ...c, amount: value } : c
-                            ));
-                          }
-                        }}
-                        style={{ width: 80 }}
-                      />
-                      <span className="mx-2">{chemical?.unit || 'đơn vị'}</span>
-                      <Button 
-                        type="text" 
-                        danger
-                        onClick={() => {
-                          setSelectedChemicals(prev => prev.filter((_, i) => i !== index));
-                        }}
-                      >
-                        Xóa
-                      </Button>
+                        <Button 
+                          type="primary"
+                          onClick={() => {
+                            if (selectedChemicalId) {
+                              const chemical = chemicals.find(c => c.chemicalId === selectedChemicalId);
+                              if (chemical) {
+                                setSelectedChemicals([
+                                  ...selectedChemicals,
+                                  {
+                                    chemicalId: chemical.chemicalId,
+                                    amount: 1,
+                                    chemicalName: chemical.chemicalName,
+                                    unit: chemical.unit
+                                  }
+                                ]);
+                                setSelectedChemicalId(undefined);
+                              }
+                            } else {
+                              message.warning('Vui lòng chọn hóa chất');
+                            }
+                          }}
+                        >
+                          Thêm
+                        </Button>
+                      </div>
+            
+                      {/* Danh sách hóa chất đã chọn */}
+                      {selectedChemicals.map((item, index) => (
+                        <div key={index} className="flex items-center mb-2 p-2 border rounded">
+                          <div className="flex-1">{item.chemicalName} ({item.unit})</div>
+                          <InputNumber
+                            min={0.1}
+                            step={0.1}
+                            value={item.amount}
+                            onChange={value => {
+                              const updatedChemicals = [...selectedChemicals];
+                              updatedChemicals[index].amount = Number(value || 0);
+                              setSelectedChemicals(updatedChemicals);
+                            }}
+                            style={{ width: 100 }}
+                          />
+                          <Button 
+                            danger 
+                            type="text"
+                            onClick={() => {
+                              const updatedChemicals = selectedChemicals.filter((_, i) => i !== index);
+                              setSelectedChemicals(updatedChemicals);
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-gray-500 italic">Chưa có hóa chất nào được chọn</div>
-          )}
-        </div>
-      </Modal>
-    </div>
-  );
-};
-
-export default WaterQualityRecords;
+                  </Modal>
+                </div>
+              );
+            };
+            
+            export default WaterQualityRecords;
