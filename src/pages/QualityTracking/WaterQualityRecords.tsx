@@ -306,11 +306,27 @@ const WaterQualityRecords: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_, record) => (
-        <Button type="primary" onClick={() => showProcessModal(record)}>
-          Xử lý
-        </Button>
-      ),
+      render: (_, record) => {
+        // Nếu đã được xử lý (resolved = true), không hiển thị nút "Xử lý"
+        if (record.resolved) {
+          return null;
+        }
+        
+        // Chỉ hiển thị nút "Xử lý" khi chưa được xử lý và cần xử lý
+        if (record.needsAction) {
+          return (
+            <Button 
+              type="primary" 
+              onClick={() => showProcessModal(record)}
+            >
+              Xử lý
+            </Button>
+          );
+        }
+        
+        // Trường hợp không cần xử lý
+        return <span>-</span>;
+      },
     },
   ];
 
@@ -517,7 +533,6 @@ const WaterQualityRecords: React.FC = () => {
                 action: "Sử dụng"
               });
             }
-            // ===== KẾT THÚC PHẦN THÊM MỚI =====
             
             message.success("Đã xử lý và cập nhật kho!");
             setIsProcessModalVisible(false);

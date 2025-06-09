@@ -91,7 +91,7 @@ export interface Chemical {
 }
 
 export interface AdjustmentRecord {
-  historyId: number; // Đổi từ id thành historyId để rõ ràng hơn
+  historyId: number ; 
   chemicalId: number;
   chemicalName: string;
   action: string; // "Sử dụng" hoặc "Nạp thêm"
