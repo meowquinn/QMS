@@ -201,12 +201,18 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 text-sm">
-            <span className="text-green-500 font-medium">{poolStats.active} hoạt động</span>
-            {poolStats.underMaintenance > 0 && (
-              <span className="ml-2 text-orange-500 font-medium">{poolStats.underMaintenance} bảo trì</span>
+            <span className="text-green-500 font-medium">
+              {(dashboardStats?.activePools ?? poolStats.active)} hoạt động
+            </span>
+            {(dashboardStats?.maintenancePools ?? poolStats.underMaintenance) > 0 && (
+              <span className="ml-2 text-orange-500 font-medium">
+                {(dashboardStats?.maintenancePools ?? poolStats.underMaintenance)} bảo trì
+              </span>
             )}
             {dashboardStats?.closedPools && dashboardStats.closedPools > 0 && (
-              <span className="ml-2 text-red-500 font-medium">{dashboardStats.closedPools} đóng cửa</span>
+              <span className="ml-2 text-red-500 font-medium">
+                {dashboardStats.closedPools} đóng cửa
+              </span>
             )}
           </div>
         </div>
@@ -318,37 +324,42 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentMeasurements.map((measurement, index) => (
-                <tr key={`${measurement.parameterId || measurement.poolId}-${index}`}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {measurement.poolName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`px-2 py-1 rounded-full ${
-                      (measurement.pHLevel || measurement.pHLevel) < 7.2 || (measurement.pHLevel || measurement.pHLevel) > 7.8 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {measurement.pHLevel || measurement.pHLevel}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={`px-2 py-1 rounded-full ${
-                      (measurement.chlorineMgPerL || measurement.chlorineMgPerL) < 1.0 || (measurement.chlorineMgPerL || measurement.chlorineMgPerL) > 3.0 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {measurement.chlorineMgPerL || measurement.chlorineMgPerL}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {measurement.temperatureC || measurement.temperatureC}°C
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(measurement.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
-                  </td>
-                </tr>
-              ))}
+              {recentMeasurements.map((measurement, index) => {
+                const phValue = measurement.pHLevel ?? measurement.pHLevel;
+                const chlorineValue = measurement.chlorineMgPerL ?? measurement.chlorineLevel;
+                const tempValue = measurement.temperatureC ?? measurement.temperatureC;
+                return (
+                  <tr key={`${measurement.parameterId || measurement.poolId}-${index}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {measurement.poolName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`px-2 py-1 rounded-full ${
+                        phValue < 7.2 || phValue > 7.8 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {phValue}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`px-2 py-1 rounded-full ${
+                        chlorineValue < 1.0 || chlorineValue > 3.0 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {chlorineValue}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {tempValue}°C
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(measurement.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

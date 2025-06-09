@@ -46,20 +46,6 @@ export const getDashboardSummary = async () => {
       
       // Nếu tất cả đều thất bại, trả về dữ liệu mẫu
       console.warn("Dashboard API not available, using mock data");
-      
-      return {
-        success: true,
-        data: {
-          totalPools: 0,
-          activePools: 0,
-          maintenancePools: 0,
-          closedPools: 0,
-          totalAlerts: 0,
-          criticalAlerts: 0,
-          warningAlerts: 0,
-          todayMeasurements: 0
-        }
-      };
     }
   }
 };
