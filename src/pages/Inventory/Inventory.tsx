@@ -44,7 +44,7 @@ import { getAllStaff } from "../../services/staffService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
-  const [pools, setPools] = useState<Pool[]>([]); 
+  const [pools, setPools] = useState<Pool[]>([]); // Thêm state pools
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>("");
@@ -54,7 +54,7 @@ const InventoryStock: React.FC = () => {
   const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
-  const [actionFilter, setActionFilter] = useState<string | null>(null);
+  const [actionFilter, setActionFilter] = useState<string | null>(null); // Thêm filter cho lịch sử
   const [staffMap, setStaffMap] = useState<{[key: number]: string}>({});
 
   const staffId = getCurrentUser()?.staffId || 0;

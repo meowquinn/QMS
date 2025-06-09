@@ -13,8 +13,28 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       try {
         const summaryRes = await getDashboardSummary();
-        setDashboardStats(summaryRes?.data || null);
-      } catch {
+        console.log("Summary response:", summaryRes); // Debug
+        console.log("Summary response data:", summaryRes?.data); // Debug thêm
+        
+        // Thử các cách khác nhau để lấy data
+        let statsData = null;
+        
+        if (summaryRes?.success && summaryRes?.data) {
+          // Nếu API trả về { success: true, data: {...} }
+          statsData = summaryRes.data;
+        } else if (summaryRes?.data) {
+          // Nếu API trả về { data: {...} }
+          statsData = summaryRes.data;
+        } else if (summaryRes) {
+          // Nếu API trả về trực tiếp object
+          statsData = summaryRes;
+        }
+        
+        console.log("Final stats data:", statsData); // Debug
+        setDashboardStats(statsData);
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
         message.error("Không thể tải dữ liệu tổng quan!");
       } finally {
         setLoading(false);
@@ -22,6 +42,9 @@ const Dashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Thêm debug để xem state
+  console.log("Current dashboardStats state:", dashboardStats);
 
   if (loading) {
     return (
