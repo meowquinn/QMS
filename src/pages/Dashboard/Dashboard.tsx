@@ -49,16 +49,12 @@ const Dashboard: React.FC = () => {
             <span className="text-green-500 font-medium">
               {dashboardStats?.activePools} hoạt động
             </span>
-            {dashboardStats?.maintenancePools && dashboardStats.maintenancePools > 0 && (
-              <span className="ml-2 text-orange-500 font-medium">
-                {dashboardStats.maintenancePools} bảo trì
-              </span>
-            )}
-            {dashboardStats?.closedPools && dashboardStats.closedPools > 0 && (
-              <span className="ml-2 text-red-500 font-medium">
-                {dashboardStats.closedPools} đóng cửa
-              </span>
-            )}
+            <span className="ml-2 text-orange-500 font-medium">
+              {dashboardStats?.maintenancePools} bảo trì
+            </span>
+            <span className="ml-2 text-red-500 font-medium">
+              {dashboardStats?.closedPools} đóng cửa
+            </span>
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -77,11 +73,9 @@ const Dashboard: React.FC = () => {
             <span className="text-red-500 font-medium">
               {dashboardStats?.criticalAlerts} nghiêm trọng
             </span>
-            {dashboardStats?.warningAlerts && dashboardStats.warningAlerts > 0 && (
-              <span className="ml-1 text-orange-500 font-medium">
-                , {dashboardStats.warningAlerts} cảnh báo
-              </span>
-            )}
+            <span className="ml-1 text-orange-500 font-medium">
+              , {dashboardStats?.warningAlerts} cảnh báo
+            </span>
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
