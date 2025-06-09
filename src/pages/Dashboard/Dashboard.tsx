@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchData();
-  });
+  }, []);
 
   // Hiển thị loading khi đang tải dữ liệu
   if (loading) {
