@@ -44,7 +44,7 @@ import { getAllStaff } from "../../services/staffService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
-  const [pools, setPools] = useState<Pool[]>([]); // Thêm state pools
+  const [pools, setPools] = useState<Pool[]>([]); 
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>("");
@@ -54,7 +54,7 @@ const InventoryStock: React.FC = () => {
   const [selectedChemical, setSelectedChemical] = useState<Chemical | null>(null);
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>("inventory");
-  const [actionFilter, setActionFilter] = useState<string | null>(null); // Thêm filter cho lịch sử
+  const [actionFilter, setActionFilter] = useState<string | null>(null);
   const [staffMap, setStaffMap] = useState<{[key: number]: string}>({});
 
   const staffId = getCurrentUser()?.staffId || 0;
@@ -193,7 +193,7 @@ const InventoryStock: React.FC = () => {
         setIsEditModalVisible(false);
         await reloadAll();
       }
-    } catch (error) {
+    } catch {
       message.error("Cập nhật thông tin hóa chất thất bại!");
     }
   };
@@ -216,7 +216,7 @@ const InventoryStock: React.FC = () => {
       setIsAddModalVisible(false);
       form.resetFields();
       await reloadAll();
-    } catch (error) {
+    } catch {
       message.error("Thêm hóa chất thất bại!");
     }
   };
@@ -250,7 +250,7 @@ const InventoryStock: React.FC = () => {
         message.success("Đã nạp thêm hóa chất thành công!");
         await reloadAll();
       }
-    } catch (error) {
+    } catch {
       message.error("Nạp thêm hóa chất thất bại!");
     }
   };
@@ -281,7 +281,7 @@ const InventoryStock: React.FC = () => {
       await deleteChemical(chemicalId);
       message.success("Đã xóa hóa chất thành công!");
       await reloadAll();
-    } catch (error) {
+    } catch{
       message.error("Xóa hóa chất thất bại!");
     }
   };

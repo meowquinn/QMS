@@ -1,25 +1,152 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaCheckCircle, FaWater, FaFlask } from 'react-icons/fa';
+import { message, Spin } from 'antd';
+import { getAllPools } from '../../services/poolService';
+import { getWaterQualityHistory } from '../../services/waterQualityService';
+import type { Pool, WaterQualityRecord } from '../../services/types';
+
+interface QualityAlert {
+  id: string;
+  poolId: number;
+  poolName: string;
+  parameter: string;
+  value: number;
+  status: 'danger' | 'warning';
+  time: string;
+}
 
 const Dashboard: React.FC = () => {
-  // Sample data
-  const poolStats = {
-    total: 5,
-    active: 4,
-    underMaintenance: 1,
+  const [loading, setLoading] = useState<boolean>(true);
+  const [pools, setPools] = useState<Pool[]>([]);
+  const [qualityRecords, setQualityRecords] = useState<WaterQualityRecord[]>([]);
+  const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
+  const [qualityAlerts, setQualityAlerts] = useState<QualityAlert[]>([]);
+
+  const [poolStats, setPoolStats] = useState({
+    total: 0,
+    active: 0,
+    underMaintenance: 0,
+  });
+
+  // Hàm để lấy bản ghi mới nhất cho mỗi hồ bơi
+  const getLatestRecordsPerPool = (records: WaterQualityRecord[], pools: Pool[]) => {
+    const poolMap = new Map();
+    
+    // Tạo map để ánh xạ poolId với tên hồ bơi
+    pools.forEach(pool => {
+      poolMap.set(pool.poolsId, pool.poolName);
+    });
+    
+    // Sắp xếp theo thời gian mới nhất trước
+    const sortedRecords = [...records].sort((a, b) => 
+      new Date(b.pTimestamp).getTime() - new Date(a.pTimestamp).getTime()
+    );
+    
+    // Lấy bản ghi mới nhất cho mỗi hồ bơi
+    const latestPerPool = new Map();
+    sortedRecords.forEach(record => {
+      if (!latestPerPool.has(record.poolId)) {
+        // Thêm tên hồ bơi vào bản ghi
+        record.poolName = poolMap.get(record.poolId) || `Hồ bơi #${record.poolId}`;
+        latestPerPool.set(record.poolId, record);
+      }
+    });
+    
+    return Array.from(latestPerPool.values());
   };
 
-  const qualityAlerts = [
-    { id: 1, poolName: 'Hồ bơi A', parameter: 'pH', value: 8.2, status: 'warning', time: '09:30' },
-    { id: 2, poolName: 'Hồ bơi C', parameter: 'Clo', value: 0.4, status: 'danger', time: '08:15' },
-  ];
+  // Hàm để lọc ra những cảnh báo về chất lượng nước
+  const getQualityAlerts = (records: WaterQualityRecord[], pools: Pool[]) => {
+    const poolMap = new Map();
+    pools.forEach(pool => {
+      poolMap.set(pool.poolsId, pool.poolName);
+    });
+    
+    // Lọc ra những bản ghi có chỉ số bất thường
+    const alerts: QualityAlert[] = [];
+    
+    // Chỉ lấy các bản ghi mới nhất cho từng hồ bơi
+    const latestRecords = getLatestRecordsPerPool(records, pools);
+    
+    for (const record of latestRecords) {
+      // Kiểm tra pH
+      if (record.phLevel < 7.2 || record.phLevel > 7.8) {
+        alerts.push({
+          id: `ph-${record.recordId}`,
+          poolId: record.poolId,
+          poolName: poolMap.get(record.poolId) || `Hồ bơi #${record.poolId}`,
+          parameter: 'pH',
+          value: record.phLevel,
+          status: (record.phLevel < 6.8 || record.phLevel > 8.0 ? 'danger' : 'warning'),
+          time: new Date(record.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
+        });
+      }
+      
+      // Kiểm tra clo
+      if (record.chlorineLevel < 1.0 || record.chlorineLevel > 3.0) {
+        alerts.push({
+          id: `chlorine-${record.recordId}`,
+          poolId: record.poolId,
+          poolName: poolMap.get(record.poolId) || `Hồ bơi #${record.poolId}`,
+          parameter: 'Clo',
+          value: record.chlorineLevel,
+          status: (record.chlorineLevel < 0.5 || record.chlorineLevel > 3.5 ? 'danger' : 'warning'),
+          time: new Date(record.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})
+        });
+      }
+    }
+    
+    return alerts;
+  };
 
-  const recentMeasurements = [
-    { id: 1, poolName: 'Hồ bơi A', pH: 7.4, chlorine: 1.5, temp: 28, lastUpdated: '09:30' },
-    { id: 2, poolName: 'Hồ bơi B', pH: 7.6, chlorine: 2.1, temp: 27, lastUpdated: '09:15' },
-    { id: 3, poolName: 'Hồ bơi C', pH: 7.2, chlorine: 0.4, temp: 29, lastUpdated: '08:15' },
-    { id: 4, poolName: 'Hồ bơi D', pH: 7.5, chlorine: 1.8, temp: 28, lastUpdated: '08:00' },
-  ];
+  // Fetch dữ liệu khi component được mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Gọi API lấy danh sách hồ bơi
+        const poolsResponse = await getAllPools();
+        const poolsData = Array.isArray(poolsResponse?.data) ? poolsResponse.data : [];
+        setPools(poolsData);
+        
+        // Tính toán số liệu thống kê hồ bơi
+        setPoolStats({
+          total: poolsData.length,
+          active: poolsData.filter(pool => pool.status === 'active' || pool.status === 'Hoạt động').length,
+          underMaintenance: poolsData.filter(pool => pool.status === 'maintenance' || pool.status === 'Bảo trì').length,
+        });
+        
+        // Gọi API lấy dữ liệu chất lượng nước
+        const recordsResponse = await getWaterQualityHistory();
+        const recordsData = Array.isArray(recordsResponse?.data) ? recordsResponse.data : [];
+        setQualityRecords(recordsData);
+        
+        // Lọc ra những bản ghi mới nhất cho mỗi hồ bơi (đo lường gần đây)
+        const latestRecords = getLatestRecordsPerPool(recordsData, poolsData);
+        setRecentMeasurements(latestRecords);
+        
+        // Lọc ra những cảnh báo về chất lượng nước
+        const alerts = getQualityAlerts(recordsData, poolsData);
+        setQualityAlerts(alerts);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        message.error("Không thể tải dữ liệu tổng quan!");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  });
+
+  // Hiển thị loading khi đang tải dữ liệu
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spin size="large" tip="Đang tải dữ liệu..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -56,8 +183,14 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 text-sm">
-            <span className="text-red-500 font-medium">1 nghiêm trọng</span>,
-            <span className="ml-1 text-orange-500 font-medium">1 cảnh báo</span>
+            <span className="text-red-500 font-medium">
+              {qualityAlerts.filter(a => a.status === 'danger').length} nghiêm trọng
+            </span>
+            {qualityAlerts.filter(a => a.status === 'warning').length > 0 && (
+              <span className="ml-1 text-orange-500 font-medium">
+                , {qualityAlerts.filter(a => a.status === 'warning').length} cảnh báo
+              </span>
+            )}
           </div>
         </div>
 
@@ -142,34 +275,34 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentMeasurements.map((measurement) => (
-                <tr key={measurement.id}>
+              {recentMeasurements.map((measurement, index) => (
+                <tr key={`${measurement.parameterId || measurement.poolId}-${index}`}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {measurement.poolName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={`px-2 py-1 rounded-full ${
-                      measurement.pH < 7.2 || measurement.pH > 7.8 
+                      measurement.pHLevel < 7.2 || measurement.pHLevel > 7.8 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {measurement.pH}
+                      {measurement.pHLevel}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span className={`px-2 py-1 rounded-full ${
-                      measurement.chlorine < 1.0 || measurement.chlorine > 3.0 
+                      measurement.chlorineMgPerL < 1.0 || measurement.chlorineMgPerL > 3.0 
                         ? 'bg-red-100 text-red-800' 
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {measurement.chlorine}
+                      {measurement.chlorineMgPerL}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {measurement.temp}°C
+                    {measurement.temperatureC}°C
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {measurement.lastUpdated}
+                    {new Date(measurement.pTimestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}
                   </td>
                 </tr>
               ))}
