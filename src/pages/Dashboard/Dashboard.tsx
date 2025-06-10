@@ -1,40 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { FaExclamationTriangle, FaCheckCircle, FaWater, FaFlask } from 'react-icons/fa';
+import { FaExclamationTriangle, FaWater, FaFlask } from 'react-icons/fa';
 import { message, Spin } from 'antd';
-import { getDashboardSummary} from '../../services/dashboardService';
-import type { DashboardStats,} from '../../services/types';
+import { getDashboardSummary, getLatestMeasurements} from '../../services/dashboardService';
+import type { DashboardStats, WaterQualityRecord } from '../../services/types';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  // const [qualityAlerts, setQualityAlerts] = useState<QualityAlert[]>([]);
-  // const [recentMeasurements, setRecentMeasurements] = useState<Measurement[]>([]);
+  const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const summaryRes = await getDashboardSummary();
-        let statsData = null;
-        
-        if (summaryRes?.success && summaryRes?.data) {
-          statsData = summaryRes.data;
-        } else if (summaryRes?.data) {
-          statsData = summaryRes.data;
-        } else if (summaryRes) {
-          statsData = summaryRes;
-        }
-        
-        setDashboardStats(statsData);
-
-        // Lấy dữ liệu cảnh báo và đo lường
-        const alertsRes = await getQualityAlerts();
-        setQualityAlerts(alertsRes?.data || []);
+        setDashboardStats(summaryRes?.data || null);
 
         const latestRes = await getLatestMeasurements();
-        setRecentMeasurements(latestRes?.data || []);
+        console.log("Latest measurements response:", latestRes); // Debug
+        
+        // Gọi thẳng WaterQualityRecord và giới hạn 5 bản ghi
+        const measurements = (latestRes?.data || []).slice(0, 5);
+        setRecentMeasurements(measurements);
 
-      } catch {
+      } catch (error) {
+        console.error("Error fetching data:", error);
         message.error("Không thể tải dữ liệu tổng quan!");
       } finally {
         setLoading(false);
@@ -42,9 +32,6 @@ const Dashboard: React.FC = () => {
     };
     fetchData();
   }, []);
-
-  // Thêm debug để xem state
-  console.log("Current dashboardStats state:", dashboardStats);
 
   if (loading) {
     return (
@@ -118,42 +105,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Cảnh báo chất lượng nước */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-800">Cảnh báo chất lượng nước</h2>
-        </div>
-        <div className="p-4">
-          {qualityAlerts.length === 0 ? (
-            <div className="text-center py-4">
-              <FaCheckCircle className="text-green-500 text-3xl mx-auto mb-2" />
-              <p className="text-gray-600">Không có cảnh báo nào!</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {qualityAlerts.map((alert) => (
-                <div key={alert.id} className="py-3 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className={`p-2 rounded-full ${alert.status === 'danger' ? 'bg-red-100' : 'bg-yellow-100'}`}>
-                      <FaExclamationTriangle className={`${alert.status === 'danger' ? 'text-red-500' : 'text-yellow-500'} text-lg`} />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">{alert.poolName}</p>
-                      <p className="text-sm text-gray-500">
-                        {alert.parameter} {alert.value} - {alert.status === 'danger' ? 'Nghiêm trọng' : 'Cảnh báo'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {alert.time}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Thông tin đo lường hôm nay */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200">
@@ -178,32 +129,56 @@ const Dashboard: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thời gian
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {recentMeasurements.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                     Chưa có dữ liệu đo lường hôm nay
                   </td>
                 </tr>
               ) : (
-                recentMeasurements.map((measurement, index) => (
-                  <tr key={measurement.id || measurement.recordId || index}>
+                recentMeasurements.map((record, index) => (
+                  <tr key={record.parameterId || index}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {measurement.poolName}
+                      {record.poolName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {measurement.pH}
+                      <span className={`px-2 py-1 rounded-full ${
+                        record.pHLevel < 7.2 || record.pHLevel > 7.8 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {record.pHLevel}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {measurement.chlorine}
+                      <span className={`px-2 py-1 rounded-full ${
+                        record.chlorineMgPerL < 1.0 || record.chlorineMgPerL > 3.0 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {record.chlorineMgPerL}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {measurement.temperature}°C
+                      {record.temperatureC}°C
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {measurement.time}
+                      {new Date(record.pTimestamp).toLocaleString('vi-VN')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        record.rStatus === 'Normal' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {record.rStatus}
+                      </span>
                     </td>
                   </tr>
                 ))
