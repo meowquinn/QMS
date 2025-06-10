@@ -1,30 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaWater, FaFlask } from 'react-icons/fa';
 import { message, Spin } from 'antd';
-import { getDashboardSummary, getLatestMeasurements} from '../../services/dashboardService';
-import type { DashboardStats, WaterQualityRecord } from '../../services/types';
+import { getDashboardSummary, getLatestMeasurements, } from '../../services/dashboardService';
+import type { DashboardStats, WaterQualityRecord } from '../../services/types'
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
+    const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
+
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const summaryRes = await getDashboardSummary();
-        setDashboardStats(summaryRes?.data || null);
-
-        const latestRes = await getLatestMeasurements();
-        console.log("Latest measurements response:", latestRes); // Debug
+        let statsData = null;
         
-        // Gọi thẳng WaterQualityRecord và giới hạn 5 bản ghi
-        const measurements = (latestRes?.data || []).slice(0, 5);
-        setRecentMeasurements(measurements);
+        if (summaryRes?.success && summaryRes?.data) {
+          statsData = summaryRes.data;
+        } else if (summaryRes?.data) {
+          statsData = summaryRes.data;
+        } else if (summaryRes) {
+          statsData = summaryRes;
+        }
+        
+        setDashboardStats(statsData);
 
-      } catch (error) {
-        console.error("Error fetching data:", error);
+        // Lấy dữ liệu cảnh báo và đo lường
+        const latestRes = await getLatestMeasurements();
+        setRecentMeasurements(latestRes?.data || []);
+
+      } catch {
         message.error("Không thể tải dữ liệu tổng quan!");
       } finally {
         setLoading(false);
@@ -32,6 +39,9 @@ const Dashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Thêm debug để xem state
+  console.log("Current dashboardStats state:", dashboardStats);
 
   if (loading) {
     return (
