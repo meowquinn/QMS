@@ -25,21 +25,18 @@ const Dashboard: React.FC = () => {
           statsData = summaryRes;
         }
       
-        // Lấy dữ liệu cảnh báo và đo lường
+        // Lấy dữ liệu đo lường (BE đã sort sẵn)
         const latestRes = await getLatestMeasurements();
 
-
-        // Sắp xếp theo thời gian mới nhất và lấy 5 bản ghi đầu
-        const sortedMeasurements: WaterQualityRecord[] = (latestRes?.data || [])
-          .sort((a: WaterQualityRecord, b: WaterQualityRecord) => 
-            new Date(b.pTimestamp).getTime() - new Date(a.pTimestamp).getTime()) // Sắp xếp theo thời gian mới nhất
-          .slice(0, 5);
+        
+        // Chỉ lấy 5 bản ghi đầu tiên (BE đã sort theo thời gian mới nhất)
+        const recentRecords = (latestRes?.data || []).slice(0, 5);
         
         setDashboardStats(statsData);
-        setRecentMeasurements(sortedMeasurements);
+        setRecentMeasurements(recentRecords);
 
-        
-      } catch {
+      } catch (error) {
+        console.error("Error:", error);
         message.error("Không thể tải dữ liệu tổng quan!");
       } finally {
         setLoading(false);
