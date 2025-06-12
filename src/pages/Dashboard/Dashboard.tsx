@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaWater, FaFlask } from 'react-icons/fa';
 import { message, Spin } from 'antd';
-import { getDashboardSummary, getLatestMeasurements, } from '../../services/dashboardService';
+import { getDashboardSummary } from '../../services/dashboardService';
 import type { DashboardStats, WaterQualityRecord } from '../../services/types'
+import { getWaterQualityHistory } from '../../services/waterQualityService';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -25,8 +26,8 @@ const Dashboard: React.FC = () => {
           statsData = summaryRes;
         }
       
-        // Lấy dữ liệu đo lường (BE đã sort sẵn)
-        const latestRes = await getLatestMeasurements();
+        // Lấy dữ liệu đo lường
+        const latestRes = await getWaterQualityHistory();
 
         
         // Chỉ lấy 5 bản ghi đầu tiên (BE đã sort theo thời gian mới nhất)
