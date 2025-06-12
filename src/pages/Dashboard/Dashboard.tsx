@@ -32,10 +32,8 @@ const Dashboard: React.FC = () => {
         console.log("API Response:", latestRes);
         
         // Chỉ lấy 5 bản ghi đầu tiên (BE đã sort theo thời gian mới nhất)
-        const recentRecords = (latestRes?.data || []).slice(0, 5);
-        
-        console.log("Recent records:", recentRecords);
-        console.log("Records length:", recentRecords.length);
+        const recentRecords = (latestRes || []).slice(0, 5);
+        console.log("Recent Records:", recentRecords);
         
         setDashboardStats(statsData);
         setRecentMeasurements(recentRecords);
