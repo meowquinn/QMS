@@ -24,13 +24,21 @@ const Dashboard: React.FC = () => {
         } else if (summaryRes) {
           statsData = summaryRes;
         }
-        
-        setDashboardStats(statsData);
-
+      
         // Lấy dữ liệu cảnh báo và đo lường
         const latestRes = await getLatestMeasurements();
-        setRecentMeasurements(latestRes?.data || []);
 
+
+        // Sắp xếp theo thời gian mới nhất và lấy 5 bản ghi đầu
+        const sortedMeasurements: WaterQualityRecord[] = (latestRes?.data || [])
+          .sort((a: WaterQualityRecord, b: WaterQualityRecord) => 
+            new Date(b.pTimestamp).getTime() - new Date(a.pTimestamp).getTime()) // Sắp xếp theo thời gian mới nhất
+          .slice(0, 5);
+        
+        setDashboardStats(statsData);
+        setRecentMeasurements(sortedMeasurements);
+
+        
       } catch {
         message.error("Không thể tải dữ liệu tổng quan!");
       } finally {
@@ -115,10 +123,10 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Thông tin đo lường hôm nay */}
+      {/* Thông tin đo lường gần nhất */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-800">Thông tin đo lường hôm nay</h2>
+          <h2 className="text-lg font-medium text-gray-800">Thông tin đo lường gần nhát</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
@@ -148,7 +156,7 @@ const Dashboard: React.FC = () => {
               {recentMeasurements.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    Chưa có dữ liệu đo lường hôm nay
+                    Chưa có dữ liệu đo lường gần nhất
                   </td>
                 </tr>
               ) : (
