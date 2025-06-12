@@ -8,7 +8,7 @@ import { getWaterQualityHistory } from '../../services/waterQualityService';
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-    const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
+  const [recentMeasurements, setRecentMeasurements] = useState<WaterQualityRecord[]>([]);
 
 
   useEffect(() => {
@@ -29,9 +29,13 @@ const Dashboard: React.FC = () => {
         // Lấy dữ liệu đo lường
         const latestRes = await getWaterQualityHistory();
 
+        console.log("API Response:", latestRes);
         
         // Chỉ lấy 5 bản ghi đầu tiên (BE đã sort theo thời gian mới nhất)
         const recentRecords = (latestRes?.data || []).slice(0, 5);
+        
+        console.log("Recent records:", recentRecords);
+        console.log("Records length:", recentRecords.length);
         
         setDashboardStats(statsData);
         setRecentMeasurements(recentRecords);
