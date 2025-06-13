@@ -4,6 +4,9 @@ import { message, Spin } from 'antd';
 import { getDashboardSummary } from '../../services/dashboardService';
 import type { DashboardStats, WaterQualityRecord } from '../../services/types'
 import { getWaterQualityHistory } from '../../services/waterQualityService';
+import { Tag } from "antd";
+import { CheckCircleOutlined, WarningOutlined, AlertOutlined } from "@ant-design/icons";
+
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -190,7 +193,7 @@ const Dashboard: React.FC = () => {
 
                       {/* Nhiệt độ */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.temperatureC.toFixed(2)}°C
+                        {record.temperatureC}°C
                       </td>
 
                       {/* Thời gian đo */}
@@ -200,13 +203,25 @@ const Dashboard: React.FC = () => {
 
                       {/* Trạng thái tổng hợp */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          record.rStatus === 'Normal' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {record.rStatus}
-                        </span>
+                        {{
+                          'normal': (
+                            <Tag color="green" icon={<CheckCircleOutlined />}>
+                              Bình thường
+                            </Tag>
+                          ),
+                          'warning': (
+                            <Tag color="orange" icon={<WarningOutlined />}>
+                              Cảnh báo
+                            </Tag>
+                          ),
+                          'critical': (
+                            <Tag color="red" icon={<AlertOutlined />}>
+                              Nguy hiểm
+                            </Tag>
+                          ),
+                        }[record.rStatus] || (
+                          <Tag color="default">Không xác định</Tag>
+                        )}
                       </td>
                     </tr>
                   );
