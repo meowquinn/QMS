@@ -166,7 +166,7 @@ const WaterQualityRecords: React.FC = () => {
     
     return (
       <span style={{ color, fontWeight: status !== 'normal' ? 'bold' : 'normal' }}>
-        {value.toFixed(1)} mg/L
+        {value.toFixed(2)} mg/L
       </span>
     );
   };

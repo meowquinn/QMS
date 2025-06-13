@@ -160,46 +160,57 @@ const Dashboard: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                recentMeasurements.map((record, index) => (
-                  <tr key={record.parameterId || index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {record.poolName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded-full ${
-                        record.pHLevel < 7.2 || record.pHLevel > 7.8 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {record.pHLevel}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded-full ${
-                        record.chlorineMgPerL < 1.0 || record.chlorineMgPerL > 3.0 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {record.chlorineMgPerL}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {record.temperatureC}°C
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(record.pTimestamp).toLocaleString('vi-VN')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        record.rStatus === 'Normal' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {record.rStatus}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                recentMeasurements.map((record, index) => {
+                  const pHStatus = record.pHLevel < 7.2 || record.pHLevel > 7.8 ? 'abnormal' : 'normal';
+                  const chlorineStatus = record.chlorineMgPerL < 1.0 || record.chlorineMgPerL > 3.0 ? 'abnormal' : 'normal';
+
+                  return (
+                    <tr key={record.parameterId || index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {record.poolName}
+                      </td>
+
+                      {/* pH */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded-full ${
+                          pHStatus === 'abnormal' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {record.pHLevel.toFixed(2)}
+                        </span>
+                      </td>
+
+                      {/* Chlorine */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded-full ${
+                          chlorineStatus === 'abnormal' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {record.chlorineMgPerL.toFixed(2)}
+                        </span>
+                      </td>
+
+                      {/* Nhiệt độ */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {record.temperatureC.toFixed(2)}°C
+                      </td>
+
+                      {/* Thời gian đo */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(record.pTimestamp).toLocaleString('vi-VN')}
+                      </td>
+
+                      {/* Trạng thái tổng hợp */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          record.rStatus === 'Normal' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {record.rStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
