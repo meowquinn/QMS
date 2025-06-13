@@ -44,7 +44,7 @@ import { getAllStaff } from "../../services/staffService";
 
 const InventoryStock: React.FC = () => {
   const [chemicals, setChemicals] = useState<Chemical[]>([]);
-  const [pools, setPools] = useState<Pool[]>([]); // Thêm state pools
+  const [, setPools] = useState<Pool[]>([]); // Thêm state pools
   const [adjustmentHistory, setAdjustmentHistory] = useState<AdjustmentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchText, setSearchText] = useState<string>("");
@@ -430,15 +430,10 @@ const InventoryStock: React.FC = () => {
       dataIndex: "historyId",  
       key: "historyId",
       width: 100,
-      render: (id: number | string | undefined) => {    
-        if (id === undefined || id === null) return "-";
-        const idString = String(id);
-        return (
-          <span className="text-xs text-gray-500 font-mono">
-            {idString}
-          </span>
-        );
-      },
+      render: (id: number, record: unknown) => {
+          console.log("ID Rendered:", id, record);
+          return id ?? "-";
+      }
     },
     {
       title: 'Thời gian',
