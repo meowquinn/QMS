@@ -427,7 +427,7 @@ const InventoryStock: React.FC = () => {
   const historyColumns = [
     {
       title: "ID",
-      dataIndex: "historyId",  
+      dataIndex: "historyID",  
       key: "historyId",
       width: 100,
       render: (id: number, record: AdjustmentRecord) => {
