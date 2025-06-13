@@ -234,7 +234,6 @@ const InventoryStock: React.FC = () => {
         
         // Tạo lịch sử sử dụng
         await createChemicalUsageHistory({
-          historyId: 0,
           chemicalId: selectedChemical.chemicalId,
           chemicalName: selectedChemical.chemicalName,
           poolId: null, 
