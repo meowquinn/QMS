@@ -99,7 +99,6 @@ const Staff: React.FC = () => {
     // Không hiển thị mật khẩu khi chỉnh sửa
     form.setFieldsValue({
       ...staff,
-      // Đặt giá trị cho các trường trong form theo đúng tên trường mới
       fullName: staff.fullName,
       sRole: staff.sRole,
       phoneNumber: staff.phoneNumber,
@@ -430,7 +429,6 @@ const Staff: React.FC = () => {
               <Select placeholder="Chọn vai trò">
                 <Select.Option value="Quản lý">Quản lý</Select.Option>
                 <Select.Option value="Kỹ thuật viên">Kỹ thuật viên</Select.Option>
-                <Select.Option value="Nhân viên đo đạc">Nhân viên đo đạc</Select.Option>
               </Select>
             </Form.Item>
 
@@ -464,22 +462,35 @@ const Staff: React.FC = () => {
               name="sPassword"
               label={editingStaff ? "Đặt lại mật khẩu" : "Mật khẩu"}
               rules={[
-                { 
-                  required: !editingStaff, 
-                  message: 'Vui lòng nhập mật khẩu!' 
+                {
+                  validator: (_, value) => {
+                    // Nếu đang chỉnh sửa và không nhập mật khẩu -> OK
+                    if (editingStaff && !value) {
+                      return Promise.resolve();
+                    }
+
+                    // Nếu không nhập gì khi thêm mới -> lỗi
+                    if (!editingStaff && !value) {
+                      return Promise.reject(new Error('Vui lòng nhập mật khẩu!'));
+                    }
+
+                    // Nếu có nhập mà dưới 6 ký tự -> lỗi
+                    if (value && value.length < 6) {
+                      return Promise.reject(new Error('Mật khẩu phải có ít nhất 6 ký tự!'));
+                    }
+
+                    return Promise.resolve();
+                  },
                 },
-                { 
-                  min: 6, 
-                  message: 'Mật khẩu phải có ít nhất 6 ký tự!' 
-                }
               ]}
               tooltip={editingStaff ? "Để trống nếu không muốn thay đổi mật khẩu" : "Mật khẩu cần tối thiểu 6 ký tự"}
             >
-              <Input.Password 
-                prefix={<LockOutlined />} 
-                placeholder={editingStaff ? "Nhập mật khẩu mới để thay đổi" : "Nhập mật khẩu"} 
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder={editingStaff ? "Nhập mật khẩu mới để thay đổi" : "Nhập mật khẩu"}
               />
             </Form.Item>
+
 
             <Form.Item
               name="access"
