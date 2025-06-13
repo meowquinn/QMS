@@ -171,9 +171,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="cursor-pointer transition-colors hover:text-blue-500"
           >
             {(!isCollapsed || isMobile) ? (
-              <h1 className="text-2xl font-bold">AquaMonitor</h1>
+              <h1 className="text-2xl font-bold">QuaMaSy</h1>
             ) : (
-              <h1 className="text-2xl font-bold text-center">AQ</h1>
+              <h1 className="text-2xl font-bold text-center">QMS</h1>
             )}
           </div>
         </div>
