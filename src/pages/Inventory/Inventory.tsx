@@ -430,7 +430,7 @@ const InventoryStock: React.FC = () => {
       dataIndex: "historyId",  
       key: "historyId",
       width: 100,
-      render: (id: number, record: Chemical) => {
+      render: (id: number, record: AdjustmentRecord) => {
           console.log("ID Rendered:", id, record);
           return id ?? "-";
       }
