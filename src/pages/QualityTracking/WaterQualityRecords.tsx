@@ -515,7 +515,7 @@ const WaterQualityRecords: React.FC = () => {
               }))
             });
             
-            // ===== THÊM MỚI: Tạo lịch sử sử dụng cho từng hóa chất =====
+            // ===== Tạo lịch sử sử dụng cho từng hóa chất =====
             for (const item of selectedChemicals) {
               const selectedChemical = chemicals.find(c => c.chemicalId === item.chemicalId);
               if (!selectedChemical) continue;
@@ -530,7 +530,7 @@ const WaterQualityRecords: React.FC = () => {
                 quantity: item.amount,
                 unit: selectedChemical.unit,
                 adjustedBy: staffId ?? 0,
-                note: `Xử lý chỉ số bất thường ID: ${selectedRecord.parameterId}`,
+                note: `Xử lý chỉ số bất thường, Lịch sử đo ID: ${selectedRecord.parameterId}`,
                 action: "Sử dụng"
               });
             }
